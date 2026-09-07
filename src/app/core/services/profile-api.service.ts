@@ -3,11 +3,23 @@ import { inject, Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
-import { AvatarResponse } from '../models/profile.model';
+import { AvatarResponse, UpdateProfileRequest, UserProfile } from '../models/profile.model';
 
 @Injectable({ providedIn: 'root' })
 export class ProfileApiService {
   private readonly http = inject(HttpClient);
+
+  getMine(): Observable<UserProfile> {
+    return this.http
+      .get<ApiResponse<UserProfile>>(`${environment.apiUrl}/profile/me`)
+      .pipe(map((response) => response.data));
+  }
+
+  updateMine(request: UpdateProfileRequest): Observable<UserProfile> {
+    return this.http
+      .put<ApiResponse<UserProfile>>(`${environment.apiUrl}/profile/me`, request)
+      .pipe(map((response) => response.data));
+  }
 
   uploadAvatar(file: File): Observable<AvatarResponse> {
     const formData = new FormData();

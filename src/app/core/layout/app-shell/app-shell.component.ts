@@ -49,6 +49,9 @@ import { MenuService } from '../../services/menu.service';
             <a routerLink="/profile" (click)="userMenuOpen.set(false)"
               ><span class="pi pi-user"></span>{{ 'profile.title' | translate }}</a
             >
+            <a routerLink="/slips" (click)="userMenuOpen.set(false)"
+              ><span class="pi pi-image"></span>{{ 'slips.title' | translate }}</a
+            >
           </div>
         }
       </header>

@@ -1,15 +1,26 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
+import { finalize } from 'rxjs';
 import { AuthService } from '../../core/services/auth.service';
+import { ProfileApiService } from '../../core/services/profile-api.service';
 import { AppButtonComponent } from '../../shared/components/app-button/app-button.component';
 import { ChangePasswordComponent } from '../auth/change-password/change-password.component';
 import { AvatarCardComponent } from './avatar-card/avatar-card.component';
+import { BankAccountCardComponent } from './bank-account-card/bank-account-card.component';
+import { SweetAlertService } from '../../shared/services/sweet-alert.service';
 
 @Component({
   selector: 'app-profile',
   standalone: true,
-  imports: [ReactiveFormsModule, TranslatePipe, AppButtonComponent, ChangePasswordComponent, AvatarCardComponent],
+  imports: [
+    ReactiveFormsModule,
+    TranslatePipe,
+    AppButtonComponent,
+    ChangePasswordComponent,
+    AvatarCardComponent,
+    BankAccountCardComponent
+  ],
   template: `
     <div class="profile-grid">
       <section class="card">
@@ -68,9 +79,12 @@ import { AvatarCardComponent } from './avatar-card/avatar-card.component';
           ><input type="text" [value]="auth.currentUser()?.username" maxlength="50" readonly />
           @if (editing()) {
             <div class="form-actions">
-              <app-button [disabled]="profileForm.invalid || profileForm.pristine">{{
-                'common.save' | translate
-              }}</app-button>
+              <app-button
+                [loading]="saving()"
+                [disabled]="profileForm.invalid || profileForm.pristine"
+                (pressed)="save()"
+                >{{ 'common.save' | translate }}</app-button
+              >
               <button type="button" class="cancel-button" (click)="cancelEdit()">
                 {{ 'common.cancel' | translate }}
               </button>
@@ -82,6 +96,7 @@ import { AvatarCardComponent } from './avatar-card/avatar-card.component';
         <app-avatar-card />
         <app-change-password />
       </div>
+      <app-bank-account-card class="bank-section" />
     </div>
   `,
   styles: `
@@ -94,6 +109,9 @@ import { AvatarCardComponent } from './avatar-card/avatar-card.component';
       display: grid;
       gap: 1rem;
       align-content: start;
+    }
+    .bank-section {
+      grid-column: 1 / -1;
     }
     .card {
       border: 1px solid #e8edf3;
@@ -247,11 +265,15 @@ import { AvatarCardComponent } from './avatar-card/avatar-card.component';
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class ProfileComponent {
+export class ProfileComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
+  private readonly profileApi = inject(ProfileApiService);
+  private readonly alerts = inject(SweetAlertService);
   readonly auth = inject(AuthService);
   readonly initials = signal(this.auth.currentUser()?.name.slice(0, 2).toUpperCase() ?? 'SM');
   readonly editing = signal(false);
+  readonly saving = signal(false);
+  readonly preferredLanguage = signal<'th' | 'en'>('th');
   readonly profileForm = this.fb.nonNullable.group({
     name: [this.auth.currentUser()?.name ?? '', [Validators.required, Validators.maxLength(150)]],
     phone: ['', [Validators.maxLength(10), Validators.pattern(/^0\d{9}$/)]]
@@ -261,6 +283,14 @@ export class ProfileComponent {
     this.profileForm.disable();
   }
 
+  ngOnInit(): void {
+    this.profileApi.getMine().subscribe((profile) => {
+      this.profileForm.reset({ name: profile.name, phone: profile.phone ?? '' });
+      this.preferredLanguage.set(profile.preferredLanguage);
+      this.profileForm.disable();
+    });
+  }
+
   startEdit(): void {
     this.editing.set(true);
     this.profileForm.enable();
@@ -268,8 +298,26 @@ export class ProfileComponent {
 
   cancelEdit(): void {
     this.editing.set(false);
-    this.profileForm.reset();
-    this.profileForm.disable();
+    this.ngOnInit();
+  }
+
+  save(): void {
+    if (this.profileForm.invalid || this.saving()) {
+      this.profileForm.markAllAsTouched();
+      return;
+    }
+    const value = this.profileForm.getRawValue();
+    this.saving.set(true);
+    this.profileApi
+      .updateMine({ ...value, preferredLanguage: this.preferredLanguage() })
+      .pipe(finalize(() => this.saving.set(false)))
+      .subscribe((profile) => {
+        this.auth.updateCurrentUser(profile.name);
+        this.profileForm.reset({ name: profile.name, phone: profile.phone ?? '' });
+        this.profileForm.disable();
+        this.editing.set(false);
+        this.alerts.success('toast.profileUpdated');
+      });
   }
 
   sanitizePhone(event: Event): void {

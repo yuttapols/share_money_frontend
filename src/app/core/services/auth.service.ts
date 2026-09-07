@@ -24,6 +24,11 @@ export class AuthService {
   readonly currentUser = this.currentUserState.asReadonly();
   readonly isAuthenticated = computed(() => Boolean(this.currentUserState()));
 
+  updateCurrentUser(name: string): void {
+    const current = this.currentUserState();
+    if (current) this.currentUserState.set({ ...current, name });
+  }
+
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<ApiResponse<AuthResponse>>(`${environment.apiUrl}/auth/login`, request).pipe(
       map((response) => response.data),

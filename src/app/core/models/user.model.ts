@@ -47,3 +47,7 @@ export interface DeleteDebtorResponse {
   ok: boolean;
   deletedDebtCount: number;
 }
+
+export interface UpdateDebtorResponse {
+  ok: boolean;
+}

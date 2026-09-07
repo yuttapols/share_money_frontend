@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
@@ -19,33 +19,21 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
       </header>
       <div class="avatar-content">
         <div class="avatar-preview">
-          @if (previewUrl()) {
-            <img [src]="previewUrl()" [alt]="'profile.avatarTitle' | translate" />
+          @if (displayUrl()) {
+            <img [src]="displayUrl()" [alt]="'profile.avatarTitle' | translate" />
           } @else {
             <span>{{ initials() }}</span>
           }
         </div>
         <div class="avatar-actions">
-          <input
-            #fileInput
-            type="file"
-            [accept]="imageFileAccept"
-            [disabled]="!uploadAvailable"
-            (change)="selectFile($event)"
-          />
-          <button type="button" class="select-button" [disabled]="!uploadAvailable" (click)="fileInput.click()">
+          <input #fileInput type="file" [accept]="imageFileAccept" (change)="selectFile($event)" />
+          <button type="button" class="select-button" (click)="fileInput.click()">
             <span class="pi pi-image"></span>{{ 'profile.chooseImage' | translate }}
-            @if (uploadAvailable) {
-              <b class="required-mark">*</b>
-            }
+            <b class="required-mark">*</b>
           </button>
-          @if (uploadAvailable) {
-            <small>{{ 'profile.avatarHint' | translate }}</small>
-            @if (errorKey()) {
-              <small class="file-error" role="alert">{{ errorKey() | translate }}</small>
-            }
-          } @else {
-            <small>{{ 'profile.avatarComingSoon' | translate }}</small>
+          <small>{{ 'profile.avatarHint' | translate }}</small>
+          @if (errorKey()) {
+            <small class="file-error" role="alert">{{ errorKey() | translate }}</small>
           }
         </div>
       </div>
@@ -54,6 +42,13 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
           <app-button [loading]="uploading()" (pressed)="upload()">{{ 'profile.uploadImage' | translate }}</app-button
           ><button type="button" class="cancel-button" (click)="clearSelection()">
             {{ 'common.cancel' | translate }}
+          </button>
+        </footer>
+      } @else if (avatarUrl()) {
+        <footer>
+          <button type="button" class="remove-button" [disabled]="deleting()" (click)="deleteAvatar()">
+            <span [class]="deleting() ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span>
+            {{ 'profile.deleteImage' | translate }}
           </button>
         </footer>
       }
@@ -132,6 +127,20 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
       font-weight: 650;
       cursor: pointer;
     }
+    .remove-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: 0;
+      border-radius: 0.6rem;
+      padding: 0.55rem 0.75rem;
+      background: #fef2f2;
+      color: #dc2626;
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 650;
+      cursor: pointer;
+    }
     .select-button:hover:not(:disabled) {
       border-color: #7c3aed;
       color: #6d28d9;
@@ -174,24 +183,26 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class AvatarCardComponent implements OnDestroy {
+export class AvatarCardComponent implements OnInit, OnDestroy {
   private readonly maxFileSize = 2 * 1024 * 1024;
   readonly imageFileAccept = IMAGE_FILE_ACCEPT;
-  readonly uploadAvailable = false;
   private readonly auth = inject(AuthService);
   private readonly profileApi = inject(ProfileApiService);
   private readonly toast = inject(SweetAlertService);
   readonly selectedFile = signal<File | null>(null);
   readonly previewUrl = signal('');
+  readonly avatarUrl = signal('');
   readonly errorKey = signal('');
   readonly uploading = signal(false);
+  readonly deleting = signal(false);
+  readonly displayUrl = computed(() => this.previewUrl() || this.avatarUrl());
   readonly initials = computed(() => this.auth.currentUser()?.name.slice(0, 2).toUpperCase() ?? 'SM');
 
   selectFile(event: Event): void {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0];
     input.value = '';
-    if (!this.uploadAvailable || !file) return;
+    if (!file) return;
     if (!isAllowedImageFile(file)) {
       this.errorKey.set('validation.imageOnly');
       return;
@@ -213,9 +224,22 @@ export class AvatarCardComponent implements OnDestroy {
     this.profileApi
       .uploadAvatar(file)
       .pipe(finalize(() => this.uploading.set(false)))
-      .subscribe(() => {
+      .subscribe((response) => {
+        this.avatarUrl.set(response.avatarUrl);
         this.toast.success('toast.avatarUpdated');
         this.clearSelection();
+      });
+  }
+
+  deleteAvatar(): void {
+    if (this.deleting()) return;
+    this.deleting.set(true);
+    this.profileApi
+      .deleteAvatar()
+      .pipe(finalize(() => this.deleting.set(false)))
+      .subscribe(() => {
+        this.avatarUrl.set('');
+        this.toast.success('toast.avatarDeleted');
       });
   }
 
@@ -223,6 +247,10 @@ export class AvatarCardComponent implements OnDestroy {
     this.selectedFile.set(null);
     this.errorKey.set('');
     this.clearPreview();
+  }
+
+  ngOnInit(): void {
+    this.profileApi.getMine().subscribe((profile) => this.avatarUrl.set(profile.avatarUrl ?? ''));
   }
 
   ngOnDestroy(): void {

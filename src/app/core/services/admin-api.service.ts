@@ -4,6 +4,7 @@ import { map, Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { ApiResponse } from '../models/api-response.model';
 import { LoginLog } from '../models/login-log.model';
+import { MigrationCommitResult, MigrationStatus, MigrationValidationResult } from '../models/migration.model';
 import {
   AdminMenuItem,
   CreateMenuRequest,
@@ -49,5 +50,52 @@ export class AdminApiService {
     return this.http
       .get<ApiResponse<LoginLog[]>>(`${environment.apiUrl}/admin/login-logs`, { params })
       .pipe(map((response) => response.data));
+  }
+
+  getInstallmentChoices(): Observable<number[]> {
+    return this.http
+      .get<ApiResponse<{ choices: number[] }>>(`${environment.apiUrl}/admin/installment-choices`)
+      .pipe(map((response) => response.data.choices));
+  }
+
+  addInstallmentChoice(count: number): Observable<number[]> {
+    return this.http
+      .post<ApiResponse<{ choices: number[] }>>(`${environment.apiUrl}/admin/installment-choices`, { count })
+      .pipe(map((response) => response.data.choices));
+  }
+
+  deleteInstallmentChoice(count: number): Observable<number[]> {
+    return this.http
+      .delete<ApiResponse<{ choices: number[] }>>(`${environment.apiUrl}/admin/installment-choices/${count}`)
+      .pipe(map((response) => response.data.choices));
+  }
+
+  validateMigration(file: File): Observable<MigrationValidationResult> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.http
+      .post<ApiResponse<MigrationValidationResult>>(`${environment.apiUrl}/admin/migrations/validate`, formData)
+      .pipe(map((response) => response.data));
+  }
+
+  commitMigration(batchId: string): Observable<MigrationCommitResult> {
+    return this.http
+      .post<ApiResponse<MigrationCommitResult>>(
+        `${environment.apiUrl}/admin/migrations/${encodeURIComponent(batchId)}/commit`,
+        {}
+      )
+      .pipe(map((response) => response.data));
+  }
+
+  getMigration(batchId: string): Observable<MigrationStatus> {
+    return this.http
+      .get<ApiResponse<MigrationStatus>>(`${environment.apiUrl}/admin/migrations/${encodeURIComponent(batchId)}`)
+      .pipe(map((response) => response.data));
+  }
+
+  downloadMigrationErrors(batchId: string): Observable<Blob> {
+    return this.http.get(`${environment.apiUrl}/admin/migrations/${encodeURIComponent(batchId)}/errors.xlsx`, {
+      responseType: 'blob'
+    });
   }
 }

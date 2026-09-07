@@ -10,6 +10,7 @@ import {
   CreditorSummary,
   Debtor,
   DeleteDebtorResponse,
+  UpdateDebtorResponse,
   UpdateDebtorRequest
 } from '../models/user.model';
 
@@ -42,9 +43,9 @@ export class UserApiService {
       .pipe(map((response) => response.data));
   }
 
-  updateDebtor(username: string, request: UpdateDebtorRequest): Observable<Debtor> {
+  updateDebtor(username: string, request: UpdateDebtorRequest): Observable<UpdateDebtorResponse> {
     return this.http
-      .put<ApiResponse<Debtor>>(`${environment.apiUrl}/debtors/${encodeURIComponent(username)}`, request)
+      .put<ApiResponse<UpdateDebtorResponse>>(`${environment.apiUrl}/debtors/${encodeURIComponent(username)}`, request)
       .pipe(map((response) => response.data));
   }
 

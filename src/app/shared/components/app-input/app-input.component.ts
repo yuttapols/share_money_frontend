@@ -20,7 +20,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
         [id]="inputId()"
         [type]="type()"
         [value]="value()"
-        [maxlength]="maxLength()"
+        [attr.maxlength]="maxLength()"
         [placeholder]="placeholder()"
         [disabled]="disabled()"
         (input)="update($event)"

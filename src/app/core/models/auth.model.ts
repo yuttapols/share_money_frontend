@@ -3,6 +3,7 @@ export interface AuthUser {
   username: string;
   name: string;
   role: UserRole;
+  creditorUsername?: string;
 }
 export interface LoginRequest {
   username: string;
