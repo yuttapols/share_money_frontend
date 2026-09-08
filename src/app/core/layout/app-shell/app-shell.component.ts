@@ -8,10 +8,10 @@ import { SweetAlertService } from '../../../shared/services/sweet-alert.service'
 import { AuthService } from '../../services/auth.service';
 import { LoadingService } from '../../services/loading.service';
 import { MenuService } from '../../services/menu.service';
+import { ThemeService } from '../../services/theme.service';
 
 @Component({
   selector: 'app-shell',
-  standalone: true,
   imports: [RouterOutlet, RouterLink, RouterLinkActive, TranslatePipe, BreadcrumbComponent],
   template: `
     <div class="shell" [class.shell--collapsed]="collapsed()">
@@ -28,6 +28,14 @@ import { MenuService } from '../../services/menu.service';
           ><img src="/assets/brand/sharemoney-header.png" width="167" height="50" [alt]="'app.name' | translate"
         /></a>
         <div class="navbar__spacer"></div>
+        <button
+          type="button"
+          class="icon-button"
+          (click)="theme.toggle()"
+          [attr.aria-label]="'theme.toggle' | translate"
+        >
+          <span class="pi" [class.pi-moon]="theme.theme() === 'light'" [class.pi-sun]="theme.theme() === 'dark'"></span>
+        </button>
         <div class="language" [attr.aria-label]="'language.title' | translate">
           <button type="button" [class.active]="language() === 'th'" (click)="setLanguage('th')">TH</button><span></span
           ><button type="button" [class.active]="language() === 'en'" (click)="setLanguage('en')">EN</button>
@@ -38,7 +46,12 @@ import { MenuService } from '../../services/menu.service';
           (click)="userMenuOpen.set(!userMenuOpen())"
           [attr.aria-expanded]="userMenuOpen()"
         >
-          <span class="avatar">{{ initials() }}</span
+          <span class="avatar">
+            @if (auth.currentUser()?.avatarUrl; as avatarUrl) {
+              <img [src]="avatarUrl" [alt]="auth.currentUser()?.name" />
+            } @else {
+              {{ initials() }}
+            }</span
           ><span class="user__details"
             ><strong>{{ auth.currentUser()?.name }}</strong
             ><small>{{ auth.currentUser()?.role }}</small></span
@@ -48,9 +61,6 @@ import { MenuService } from '../../services/menu.service';
           <div class="user-menu">
             <a routerLink="/profile" (click)="userMenuOpen.set(false)"
               ><span class="pi pi-user"></span>{{ 'profile.title' | translate }}</a
-            >
-            <a routerLink="/slips" (click)="userMenuOpen.set(false)"
-              ><span class="pi pi-image"></span>{{ 'slips.title' | translate }}</a
             >
           </div>
         }
@@ -210,6 +220,7 @@ import { MenuService } from '../../services/menu.service';
 })
 export class AppShellComponent implements OnInit {
   readonly auth = inject(AuthService);
+  readonly theme = inject(ThemeService);
   readonly menu = inject(MenuService);
   readonly loading = inject(LoadingService);
   private readonly translate = inject(TranslateService);

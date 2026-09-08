@@ -6,27 +6,50 @@ export interface ConfirmDialogOptions {
   titleKey: string;
   textKey?: string;
   icon?: SweetAlertIcon;
+  emoji?: string;
+  imageUrl?: string;
   confirmButtonKey: string;
   cancelButtonKey: string;
 }
+
+export interface ConfirmWithChoiceOptions extends ConfirmDialogOptions {
+  rememberLabelKey: string;
+}
+
+export interface ConfirmWithChoiceResult {
+  accepted: boolean;
+  remember: boolean;
+}
+
+const CONFIRM_CLASSES = {
+  popup: 'app-confirm-popup',
+  icon: 'app-confirm-popup__icon',
+  title: 'app-confirm-popup__title',
+  htmlContainer: 'app-confirm-popup__text',
+  actions: 'app-confirm-popup__actions',
+  confirmButton: 'app-confirm-popup__btn app-confirm-popup__btn--confirm',
+  cancelButton: 'app-confirm-popup__btn app-confirm-popup__btn--cancel',
+  closeButton: 'app-confirm-popup__close',
+  input: 'app-confirm-popup__checkbox'
+};
 
 @Injectable({ providedIn: 'root' })
 export class SweetAlertService {
   private readonly translate = inject(TranslateService);
 
   async confirm(options: ConfirmDialogOptions): Promise<boolean> {
-    const result = await Swal.fire({
-      title: this.translate.instant(options.titleKey),
-      text: options.textKey ? this.translate.instant(options.textKey) : undefined,
-      icon: options.icon ?? 'warning',
-      showCancelButton: true,
-      confirmButtonText: this.translate.instant(options.confirmButtonKey),
-      cancelButtonText: this.translate.instant(options.cancelButtonKey),
-      confirmButtonColor: '#dc2626',
-      cancelButtonColor: '#64748b',
-      reverseButtons: true
-    });
+    const result = await Swal.fire(this.buildConfirmConfig(options));
     return result.isConfirmed;
+  }
+
+  async confirmWithChoice(options: ConfirmWithChoiceOptions): Promise<ConfirmWithChoiceResult> {
+    const result = await Swal.fire({
+      ...this.buildConfirmConfig(options),
+      input: 'checkbox',
+      inputValue: 0,
+      inputPlaceholder: this.translate.instant(options.rememberLabelKey)
+    });
+    return { accepted: result.isConfirmed, remember: result.isConfirmed && Boolean(result.value) };
   }
 
   success(messageKey: string): void {
@@ -47,6 +70,24 @@ export class SweetAlertService {
 
   errorMessage(message: string): void {
     this.toast('error', message);
+  }
+
+  private buildConfirmConfig(options: ConfirmDialogOptions) {
+    return {
+      title: this.translate.instant(options.titleKey),
+      text: options.textKey ? this.translate.instant(options.textKey) : undefined,
+      imageUrl: options.imageUrl,
+      imageHeight: options.imageUrl ? 140 : undefined,
+      iconHtml: !options.imageUrl && options.emoji ? options.emoji : undefined,
+      icon: options.imageUrl ? undefined : (options.icon ?? (options.emoji ? 'question' : undefined)),
+      showCloseButton: true,
+      showCancelButton: true,
+      confirmButtonText: this.translate.instant(options.confirmButtonKey),
+      cancelButtonText: this.translate.instant(options.cancelButtonKey),
+      buttonsStyling: false,
+      reverseButtons: true,
+      customClass: CONFIRM_CLASSES
+    };
   }
 
   private toast(icon: SweetAlertIcon, title: string): void {

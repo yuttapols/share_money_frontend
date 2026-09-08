@@ -3,7 +3,6 @@ import { DialogModule } from 'primeng/dialog';
 
 @Component({
   selector: 'app-dialog',
-  standalone: true,
   imports: [DialogModule],
   template: `<p-dialog
     [header]="title()"

@@ -1,15 +1,15 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 import { AppButtonComponent } from '../../../shared/components/app-button/app-button.component';
 import { SweetAlertService } from '../../../shared/services/sweet-alert.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { passwordValidators, resolveValidationError, usernameValidators } from '../../../shared/utils/validators.util';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
   imports: [ReactiveFormsModule, TranslatePipe, AppButtonComponent],
   template: `
     <main class="login-page">
@@ -61,7 +61,9 @@ import { AuthService } from '../../../core/services/auth.service';
             />
           </div>
           @if (showError('username')) {
-            <small class="field-error" role="alert">{{ usernameError() | translate: { max: 50 } }}</small>
+            <small class="field-error" role="alert">{{
+              usernameError()?.key | translate: usernameError()?.params
+            }}</small>
           }
           <label for="password">{{ 'auth.password' | translate }} <b>*</b></label>
           <div class="input-wrap" [class.input-wrap--invalid]="showError('password')">
@@ -79,7 +81,9 @@ import { AuthService } from '../../../core/services/auth.service';
             </button>
           </div>
           @if (showError('password')) {
-            <small class="field-error" role="alert">{{ passwordError() | translate: { min: 6, max: 100 } }}</small>
+            <small class="field-error" role="alert">{{
+              passwordError()?.key | translate: passwordError()?.params
+            }}</small>
           }
           <label class="remember-option">
             <input type="checkbox" [checked]="rememberUsername()" (change)="toggleRememberUsername($event)" />
@@ -106,27 +110,18 @@ export class LoginComponent {
   readonly showPassword = signal(false);
   readonly rememberUsername = signal(Boolean(localStorage.getItem(this.rememberedUsernameKey)));
   readonly form = this.fb.nonNullable.group({
-    username: [
-      localStorage.getItem(this.rememberedUsernameKey) ?? '',
-      [Validators.required, Validators.maxLength(50), Validators.pattern(/^[a-zA-Z0-9._-]+$/)]
-    ],
-    password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]]
+    username: [localStorage.getItem(this.rememberedUsernameKey) ?? '', usernameValidators()],
+    password: ['', passwordValidators()]
   });
   showError(name: 'username' | 'password'): boolean {
     const control = this.form.controls[name];
     return control.invalid && (control.dirty || control.touched);
   }
-  usernameError(): string {
-    const errors = this.form.controls.username.errors;
-    if (errors?.['required']) return 'validation.required';
-    if (errors?.['maxlength']) return 'validation.maxlength';
-    return 'validation.usernamePattern';
+  usernameError() {
+    return resolveValidationError(this.form.controls.username.errors, 'validation.usernamePattern');
   }
-  passwordError(): string {
-    const errors = this.form.controls.password.errors;
-    if (errors?.['required']) return 'validation.required';
-    if (errors?.['minlength']) return 'validation.minlength';
-    return 'validation.maxlength';
+  passwordError() {
+    return resolveValidationError(this.form.controls.password.errors);
   }
   togglePassword(): void {
     this.showPassword.update((value) => !value);

@@ -13,6 +13,7 @@ import {
   RefreshResponse,
   RefreshTokenRequest
 } from '../models/auth.model';
+import { ProfileApiService } from './profile-api.service';
 import { TokenStorageService } from './token-storage.service';
 
 @Injectable({ providedIn: 'root' })
@@ -20,6 +21,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly tokens = inject(TokenStorageService);
+  private readonly profileApi = inject(ProfileApiService);
   private readonly currentUserState = signal<AuthUser | null>(null);
   readonly currentUser = this.currentUserState.asReadonly();
   readonly isAuthenticated = computed(() => Boolean(this.currentUserState()));
@@ -29,12 +31,23 @@ export class AuthService {
     if (current) this.currentUserState.set({ ...current, name });
   }
 
+  updateAvatarUrl(avatarUrl: string | null): void {
+    const current = this.currentUserState();
+    if (current) this.currentUserState.set({ ...current, avatarUrl });
+  }
+
   login(request: LoginRequest): Observable<AuthResponse> {
     return this.http.post<ApiResponse<AuthResponse>>(`${environment.apiUrl}/auth/login`, request).pipe(
       map((response) => response.data),
       tap((response) => {
         this.tokens.save(response);
-        this.currentUserState.set({ username: response.username, name: response.name, role: response.role });
+        this.currentUserState.set({
+          username: response.username,
+          name: response.name,
+          role: response.role,
+          creditorUsername: response.creditorUsername
+        });
+        this.loadAvatar();
       })
     );
   }
@@ -44,13 +57,20 @@ export class AuthService {
     if (!this.tokens.hasSession) return of(false);
     return this.http.get<ApiResponse<AuthUser>>(`${environment.apiUrl}/auth/me`).pipe(
       map((response) => response.data),
-      tap((user) => this.currentUserState.set(user)),
+      tap((user) => {
+        this.currentUserState.set(user);
+        this.loadAvatar();
+      }),
       map(() => true),
       catchError(() => {
         this.clearSession();
         return of(false);
       })
     );
+  }
+
+  private loadAvatar(): void {
+    this.profileApi.getMine().subscribe((profile) => this.updateAvatarUrl(profile.avatarUrl));
   }
 
   refresh(): Observable<RefreshResponse> {

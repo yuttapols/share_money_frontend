@@ -11,10 +11,10 @@ import { AppButtonComponent } from '../../shared/components/app-button/app-butto
 import { AppDialogComponent } from '../../shared/components/app-dialog/app-dialog.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { SweetAlertService } from '../../shared/services/sweet-alert.service';
+import { currencyAmountValidators } from '../../shared/utils/validators.util';
 
 @Component({
   selector: 'app-debt-detail',
-  standalone: true,
   imports: [
     ReactiveFormsModule,
     RouterLink,
@@ -280,7 +280,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.8rem;
       font-weight: 650;
       text-decoration: none;
@@ -292,7 +292,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       place-items: center;
       margin-top: 1rem;
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
       color: #2563eb;
     }
     .detail-header {
@@ -309,12 +309,12 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     h1 {
       margin-top: 0.5rem;
-      color: #1e293b;
-      font-size: 1.8rem;
+      color: var(--color-text-primary);
+      font-size: var(--font-size-heading);
     }
     .detail-header p {
       margin-top: 0.3rem;
-      color: #64748b;
+      color: var(--color-text-secondary);
     }
     .badges {
       display: flex;
@@ -330,7 +330,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       font-weight: 750;
     }
     .method {
-      background: #eff6ff;
+      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
       color: #2563eb;
     }
     .status.pending,
@@ -356,26 +356,26 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     .summary-grid article {
       display: grid;
       gap: 0.35rem;
-      border: 1px solid #e2e8f0;
+      border: var(--border-width) solid var(--border-color);
       border-top: 4px solid #93c5fd;
       border-radius: 1rem;
       padding: 1rem;
-      background: #fff;
+      background: var(--color-surface);
     }
     .summary-grid span {
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.7rem;
     }
     .summary-grid strong {
-      color: #1e293b;
+      color: var(--color-text-primary);
       font-size: 1rem;
     }
     .table-card {
       margin-top: 1.25rem;
       overflow: hidden;
-      border: 1px solid #e2e8f0;
+      border: var(--border-width) solid var(--border-color);
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
     }
     .table-card > header {
       display: flex;
@@ -385,12 +385,12 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       padding: 1.15rem;
     }
     .table-card h2 {
-      color: #1e293b;
+      color: var(--color-text-primary);
       font-size: 1rem;
     }
     .table-card header p {
       margin-top: 0.25rem;
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.72rem;
     }
     .table-wrap {
@@ -403,18 +403,18 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     th,
     td {
-      border-top: 1px solid #f1f5f9;
+      border-top: 1px solid var(--border-color);
       padding: 0.75rem 1rem;
       text-align: left;
       font-size: 0.76rem;
     }
     th {
-      background: #f8fafc;
-      color: #64748b;
+      background: var(--color-surface-muted);
+      color: var(--color-text-secondary);
       font-weight: 700;
     }
     td {
-      color: #475569;
+      color: var(--color-text-secondary);
     }
     .right {
       text-align: right;
@@ -437,7 +437,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       cursor: pointer;
     }
     .pay {
-      background: #eff6ff;
+      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
       color: #2563eb;
     }
     .interest {
@@ -447,7 +447,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     .delete {
       margin-left: 0.35rem;
-      background: #fef2f2;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
       color: #dc2626;
     }
     button:disabled {
@@ -461,7 +461,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     .dialog-form label {
       margin-top: 0.4rem;
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.8rem;
       font-weight: 650;
     }
@@ -471,12 +471,20 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     .dialog-form input,
     .dialog-form select {
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.8rem;
-      background: #fff;
-      color: #1e293b;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+    }
+    .dialog-form input:focus,
+    .dialog-form select:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     .dialog-actions {
       display: flex;
@@ -521,9 +529,9 @@ export class DebtDetailComponent implements OnInit {
   readonly paymentForm = this.fb.nonNullable.group({ payDate: [this.today, Validators.required] });
   readonly recordForm = this.fb.nonNullable.group({
     payDate: [this.today, Validators.required],
-    interest: [0, [Validators.required, Validators.min(0), Validators.max(9999999.99)]],
-    remainingPrincipal: [0, [Validators.required, Validators.min(0), Validators.max(9999999.99)]],
-    totalPaid: [0, [Validators.required, Validators.min(0), Validators.max(9999999.99)]],
+    interest: [0, currencyAmountValidators(0)],
+    remainingPrincipal: [0, currencyAmountValidators(0)],
+    totalPaid: [0, currencyAmountValidators(0)],
     status: ['UNPAID' as 'UNPAID' | 'PAID', Validators.required]
   });
   ngOnInit(): void {

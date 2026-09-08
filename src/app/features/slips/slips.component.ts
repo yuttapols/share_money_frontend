@@ -17,7 +17,6 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
 
 @Component({
   selector: 'app-slips',
-  standalone: true,
   imports: [FormsModule, DatePipe, TranslatePipe, AppButtonComponent, EmptyStateComponent, ErrorStateComponent],
   template: `
     <header>
@@ -28,7 +27,7 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
     @if (canSelectDebtor()) {
       <section class="filter-card">
         <label>{{ 'slips.selectDebtor' | translate }}</label>
-        <select maxlength="50" [(ngModel)]="selectedDebtor" (ngModelChange)="loadSlip()">
+        <select maxlength="50" [(ngModel)]="selectedDebtor" (ngModelChange)="loadSlips()">
           <option value="">{{ 'slips.chooseDebtor' | translate }}</option>
           @for (debtor of debtors(); track debtor.id) {
             <option [value]="debtor.username">{{ debtor.name }} ({{ debtor.username }})</option>
@@ -44,7 +43,7 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
         <app-error-state
           [title]="'errors.unexpected' | translate"
           [retryLabel]="'common.retry' | translate"
-          (retry)="loadSlip()"
+          (retry)="loadSlips()"
         />
       </section>
     } @else if (canSelectDebtor() && !selectedDebtor) {
@@ -56,55 +55,72 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
         />
       </section>
     } @else {
-      <section class="slip-card">
-        <div class="preview">
-          @if (previewUrl()) {
-            <img [src]="previewUrl()" [alt]="'slips.title' | translate" />
-          } @else {
-            <span class="pi pi-image"></span>
+      @if (canUpload()) {
+        <section class="upload-card">
+          <input #fileInput type="file" [accept]="fileAccept" (change)="selectFile($event)" />
+          <button type="button" class="file-button" (click)="fileInput.click()">
+            <span class="pi pi-image"></span>{{ 'slips.chooseImage' | translate }}
+          </button>
+          <small>{{ 'slips.fileHint' | translate }}</small>
+          <small>{{ 'slips.limitHint' | translate }}</small>
+          @if (fileError()) {
+            <small class="error">{{ fileError() | translate }}</small>
           }
-        </div>
-        <div class="details">
-          @if (slip(); as currentSlip) {
-            <span class="status"><i class="pi pi-check-circle"></i>{{ 'slips.submitted' | translate }}</span>
-            <h2>{{ currentSlip.filename }}</h2>
-            <p>{{ currentSlip.uploadedAt | date: 'd MMM y, HH:mm' }}</p>
-            <p>{{ formatSize(currentSlip.sizeBytes) }}</p>
-            <div class="actions">
-              @if (currentSlip.id) {
-                <app-button icon="pi-download" [loading]="downloading()" (pressed)="download()">{{
-                  'slips.download' | translate
-                }}</app-button>
-              }
-              @if (canDelete() && currentSlip.id) {
-                <button type="button" class="delete-button" [disabled]="deleting()" (click)="deleteSlip()">
-                  <span [class]="deleting() ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span
-                  >{{ 'common.delete' | translate }}
-                </button>
-              }
-            </div>
-          } @else {
-            <h2>{{ 'slips.empty' | translate }}</h2>
-            <p>{{ 'slips.emptyDescription' | translate }}</p>
+          @if (selectedFile()) {
+            <app-button icon="pi-upload" [loading]="uploading()" (pressed)="upload()">{{
+              'slips.upload' | translate
+            }}</app-button>
           }
+        </section>
+      }
 
-          @if (canUpload()) {
-            <input #fileInput type="file" [accept]="fileAccept" (change)="selectFile($event)" />
-            <button type="button" class="file-button" (click)="fileInput.click()">
-              <span class="pi pi-image"></span>{{ 'slips.chooseImage' | translate }} <b>*</b>
-            </button>
-            <small>{{ 'slips.fileHint' | translate }}</small>
-            @if (fileError()) {
-              <small class="error">{{ fileError() | translate }}</small>
-            }
-            @if (selectedFile()) {
-              <app-button icon="pi-upload" [loading]="uploading()" (pressed)="upload()">{{
-                'slips.upload' | translate
-              }}</app-button>
-            }
+      @if (slipViews().length === 0) {
+        <section class="state-card">
+          <app-empty-state
+            icon="pi-image"
+            [title]="'slips.empty' | translate"
+            [message]="'slips.emptyDescription' | translate"
+          />
+        </section>
+      } @else {
+        <section class="slip-grid">
+          @for (item of slipViews(); track item.slip.id) {
+            <article class="slip-card">
+              <div class="preview">
+                @if (item.previewUrl) {
+                  <img [src]="item.previewUrl" [alt]="'slips.title' | translate" />
+                } @else {
+                  <span class="pi pi-spin pi-spinner"></span>
+                }
+              </div>
+              <div class="details">
+                <h2>{{ item.slip.filename }}</h2>
+                <p>{{ item.slip.uploadedAt | date: 'd MMM y, HH:mm' }}</p>
+                <p>{{ formatSize(item.slip.sizeBytes) }}</p>
+                <div class="actions">
+                  <app-button
+                    icon="pi-download"
+                    [loading]="downloadingId() === item.slip.id"
+                    (pressed)="download(item.slip)"
+                    >{{ 'slips.download' | translate }}</app-button
+                  >
+                  @if (canDelete()) {
+                    <button
+                      type="button"
+                      class="delete-button"
+                      [disabled]="deletingId() === item.slip.id"
+                      (click)="deleteSlip(item.slip)"
+                    >
+                      <span [class]="deletingId() === item.slip.id ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span
+                      >{{ 'common.delete' | translate }}
+                    </button>
+                  }
+                </div>
+              </div>
+            </article>
           }
-        </div>
-      </section>
+        </section>
+      }
     }
   `,
   styles: `
@@ -115,42 +131,50 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
       margin: 0;
     }
     header h1 {
-      color: #1e293b;
-      font-size: 1.6rem;
+      color: var(--color-text-primary);
+      font-size: var(--font-size-heading);
     }
     header p {
       margin-top: 0.35rem;
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.85rem;
     }
     .filter-card,
-    .slip-card,
+    .upload-card,
     .state-card,
     .loading-card {
       margin-top: 1.25rem;
-      border: 1px solid #e2e8f0;
+      border: var(--border-width) solid var(--border-color);
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
       box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
     }
-    .filter-card {
+    .filter-card,
+    .upload-card {
       display: grid;
       gap: 0.45rem;
       padding: 1.15rem;
     }
     .filter-card label {
-      color: #475569;
+      color: var(--color-text-secondary);
       font-size: 0.78rem;
       font-weight: 700;
     }
     select {
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.8rem;
-      background: #fff;
-      color: #1e293b;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+    }
+    select:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     .loading-card {
       display: grid;
@@ -158,68 +182,18 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
       place-items: center;
       color: #2563eb;
     }
-    .slip-card {
-      display: grid;
-      grid-template-columns: minmax(16rem, 0.9fr) minmax(18rem, 1.1fr);
-      overflow: hidden;
-      border-top: 4px solid #8b5cf6;
-    }
-    .preview {
-      min-height: 26rem;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-      background: #f1f5f9;
-      color: #94a3b8;
-      font-size: 4rem;
-    }
-    .preview img {
-      width: 100%;
-      height: 100%;
-      max-height: 34rem;
-      object-fit: contain;
-    }
-    .details {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.65rem;
-      padding: 2rem;
-    }
-    .details h2 {
-      max-width: 100%;
-      overflow-wrap: anywhere;
-      color: #1e293b;
-      font-size: 1rem;
-    }
-    .details p,
-    .details small {
-      color: #64748b;
-      font-size: 0.75rem;
-    }
-    .status {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.35rem;
-      border-radius: 999px;
-      padding: 0.35rem 0.65rem;
-      background: #ecfdf5;
-      color: #059669;
-      font-size: 0.72rem;
-      font-weight: 700;
-    }
-    .details input {
+    .upload-card input {
       position: absolute;
       width: 1px;
       height: 1px;
       overflow: hidden;
       clip: rect(0, 0, 0, 0);
     }
-    .file-button,
-    .delete-button {
+    .file-button {
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
+      width: fit-content;
       border: 1px solid #ddd6fe;
       border-radius: 0.7rem;
       padding: 0.65rem 0.85rem;
@@ -230,27 +204,84 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
       font-weight: 650;
       cursor: pointer;
     }
-    .file-button b,
-    .details .error {
+    .upload-card small {
+      color: var(--color-text-secondary);
+      font-size: 0.72rem;
+    }
+    .upload-card small.error {
       color: #dc2626;
+    }
+    .slip-grid {
+      margin-top: 1.25rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+      gap: 1rem;
+    }
+    .slip-card {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: var(--border-width) solid var(--border-color);
+      border-top: 4px solid #8b5cf6;
+      border-radius: 1rem;
+      background: var(--color-surface);
+      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+    }
+    .preview {
+      min-height: 14rem;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      background: var(--color-surface-muted);
+      color: var(--color-text-muted);
+      font-size: 1.5rem;
+    }
+    .preview img {
+      width: 100%;
+      height: 100%;
+      max-height: 16rem;
+      object-fit: contain;
+    }
+    .details {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.5rem;
+      padding: 1.15rem;
+    }
+    .details h2 {
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      color: var(--color-text-primary);
+      font-size: 0.88rem;
+    }
+    .details p {
+      color: var(--color-text-secondary);
+      font-size: 0.72rem;
     }
     .actions {
       display: flex;
-      gap: 0.65rem;
-      margin: 0.4rem 0;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.4rem;
     }
     .delete-button {
-      border-color: #fecaca;
-      background: #fef2f2;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      border: 1px solid #fecaca;
+      border-radius: 0.7rem;
+      padding: 0.65rem 0.85rem;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
       color: #dc2626;
+      font: inherit;
+      font-size: 0.8rem;
+      font-weight: 650;
+      cursor: pointer;
     }
-    @media (max-width: 720px) {
-      .slip-card {
-        grid-template-columns: 1fr;
-      }
-      .preview {
-        min-height: 18rem;
-      }
+    .delete-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -264,15 +295,18 @@ export class SlipsComponent implements OnInit, OnDestroy {
   private readonly alerts = inject(SweetAlertService);
   readonly fileAccept = IMAGE_FILE_ACCEPT;
   readonly debtors = signal<Debtor[]>([]);
-  readonly slip = signal<Slip | null>(null);
-  readonly previewUrl = signal('');
+  readonly slips = signal<Slip[]>([]);
+  readonly previewUrls = signal<Record<number, string>>({});
+  readonly slipViews = computed(() =>
+    this.slips().map((slip) => ({ slip, previewUrl: slip.id ? (this.previewUrls()[slip.id] ?? '') : '' }))
+  );
   readonly selectedFile = signal<File | null>(null);
   readonly fileError = signal('');
   readonly loading = signal(false);
   readonly loadError = signal(false);
   readonly uploading = signal(false);
-  readonly downloading = signal(false);
-  readonly deleting = signal(false);
+  readonly downloadingId = signal<number | null>(null);
+  readonly deletingId = signal<number | null>(null);
   readonly canUpload = computed(() => this.auth.currentUser()?.role === 'DEBTOR');
   readonly canSelectDebtor = computed(() => ['ADMIN', 'CREDITOR'].includes(this.auth.currentUser()?.role ?? ''));
   readonly canDelete = computed(() => ['ADMIN', 'CREDITOR'].includes(this.auth.currentUser()?.role ?? ''));
@@ -283,24 +317,34 @@ export class SlipsComponent implements OnInit, OnDestroy {
       this.userApi.getDebtors().subscribe((rows) => this.debtors.set(rows));
       return;
     }
-    this.loadSlip();
+    this.loadSlips();
   }
 
-  loadSlip(): void {
+  loadSlips(): void {
     if (this.canSelectDebtor() && !this.selectedDebtor) return;
     this.loading.set(true);
     this.loadError.set(false);
-    this.clearPreview();
+    this.clearPreviews();
+    const debtorUsername = this.canUpload() ? this.auth.currentUser()?.username : this.selectedDebtor;
+    const creditorUsername = this.resolveCreditorUsername();
     this.api
-      .get(this.canUpload() ? this.auth.currentUser()?.username : this.selectedDebtor)
+      .getAll(debtorUsername, creditorUsername)
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
-        next: (slip) => {
-          this.slip.set(slip);
-          if (slip?.id) this.loadPreview(slip.id);
+        next: (slips) => {
+          this.slips.set(slips);
+          for (const slip of slips) if (slip.id) this.loadPreview(slip.id);
         },
         error: () => this.loadError.set(true)
       });
+  }
+
+  private resolveCreditorUsername(): string {
+    const user = this.auth.currentUser();
+    if (!user) return '';
+    if (user.role === 'CREDITOR') return user.username;
+    if (user.role === 'DEBTOR') return user.creditorUsername ?? '';
+    return '';
   }
 
   selectFile(event: Event): void {
@@ -319,13 +363,11 @@ export class SlipsComponent implements OnInit, OnDestroy {
     }
     this.fileError.set('');
     this.selectedFile.set(file);
-    this.clearPreview();
-    this.previewUrl.set(URL.createObjectURL(file));
   }
 
   upload(): void {
     const file = this.selectedFile();
-    const creditorUsername = this.auth.currentUser()?.creditorUsername || this.slip()?.creditorUsername;
+    const creditorUsername = this.auth.currentUser()?.creditorUsername;
     if (!file || !creditorUsername || this.uploading()) {
       if (!creditorUsername) this.fileError.set('slips.creditorMissing');
       return;
@@ -334,27 +376,24 @@ export class SlipsComponent implements OnInit, OnDestroy {
     this.api
       .upload(creditorUsername, file)
       .pipe(finalize(() => this.uploading.set(false)))
-      .subscribe((slip) => {
-        this.slip.set(slip);
+      .subscribe(() => {
         this.selectedFile.set(null);
         this.alerts.success('toast.slipUploaded');
-        if (slip.id) this.loadPreview(slip.id);
+        this.loadSlips();
       });
   }
 
-  download(): void {
-    const slip = this.slip();
-    if (!slip?.id || this.downloading()) return;
-    this.downloading.set(true);
+  download(slip: Slip): void {
+    if (!slip.id || this.downloadingId()) return;
+    this.downloadingId.set(slip.id);
     this.api
       .getFile(slip.id)
-      .pipe(finalize(() => this.downloading.set(false)))
+      .pipe(finalize(() => this.downloadingId.set(null)))
       .subscribe((blob) => this.downloads.save(blob, slip.filename));
   }
 
-  async deleteSlip(): Promise<void> {
-    const slip = this.slip();
-    if (!slip?.id || this.deleting()) return;
+  async deleteSlip(slip: Slip): Promise<void> {
+    if (!slip.id || this.deletingId()) return;
     const confirmed = await this.alerts.confirm({
       titleKey: 'slips.deleteTitle',
       textKey: 'slips.deleteDescription',
@@ -362,13 +401,12 @@ export class SlipsComponent implements OnInit, OnDestroy {
       cancelButtonKey: 'common.cancel'
     });
     if (!confirmed) return;
-    this.deleting.set(true);
+    this.deletingId.set(slip.id);
     this.api
       .delete(slip.id)
-      .pipe(finalize(() => this.deleting.set(false)))
+      .pipe(finalize(() => this.deletingId.set(null)))
       .subscribe(() => {
-        this.slip.set(null);
-        this.clearPreview();
+        this.slips.update((rows) => rows.filter((row) => row.id !== slip.id));
         this.alerts.success('toast.slipDeleted');
       });
   }
@@ -378,18 +416,17 @@ export class SlipsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.clearPreview();
+    this.clearPreviews();
   }
 
   private loadPreview(id: number): void {
     this.api.getThumbnail(id).subscribe((blob) => {
-      this.clearPreview();
-      this.previewUrl.set(URL.createObjectURL(blob));
+      this.previewUrls.update((urls) => ({ ...urls, [id]: URL.createObjectURL(blob) }));
     });
   }
 
-  private clearPreview(): void {
-    if (this.previewUrl()) URL.revokeObjectURL(this.previewUrl());
-    this.previewUrl.set('');
+  private clearPreviews(): void {
+    for (const url of Object.values(this.previewUrls())) URL.revokeObjectURL(url);
+    this.previewUrls.set({});
   }
 }

@@ -15,10 +15,10 @@ import { AppDialogComponent } from '../../shared/components/app-dialog/app-dialo
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { SweetAlertService } from '../../shared/services/sweet-alert.service';
+import { currencyAmountValidators } from '../../shared/utils/validators.util';
 
 @Component({
   selector: 'app-debts',
-  standalone: true,
   imports: [
     ReactiveFormsModule,
     RouterLink,
@@ -32,17 +32,19 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
   template: `
     <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="m-0 text-2xl font-bold text-slate-800">{{ 'debts.title' | translate }}</h1>
-        <p class="mb-0 mt-1 text-sm text-slate-500">{{ 'debts.description' | translate }}</p>
+        <h1 class="m-0 text-base font-bold text-slate-800 dark:text-slate-100">{{ 'debts.title' | translate }}</h1>
+        <p class="mb-0 mt-1 text-sm text-slate-500 dark:text-slate-400">{{ 'debts.description' | translate }}</p>
       </div>
       @if (canManage()) {
         <app-button icon="pi-plus" (pressed)="openCreate()">{{ 'debts.add' | translate }}</app-button>
       }
     </header>
 
-    <section class="mt-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2">
+    <section
+      class="mt-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:grid-cols-2"
+    >
       <div class="relative">
-        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></span>
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></span>
         <input
           type="search"
           maxlength="50"
@@ -61,14 +63,22 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       }
     </section>
 
-    @if (loading()) {
+    @if (canManage() && !hasSelectedFilter()) {
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+        <app-empty-state
+          icon="pi-users"
+          [title]="'debts.chooseDebtor' | translate"
+          [message]="'debts.chooseDebtorDescription' | translate"
+        />
+      </div>
+    } @else if (loading()) {
       <section class="mt-5 grid gap-4 lg:grid-cols-2">
         @for (row of [1, 2, 3, 4]; track row) {
-          <div class="h-44 animate-pulse rounded-2xl bg-slate-200"></div>
+          <div class="h-44 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700"></div>
         }
       </section>
     } @else if (loadError()) {
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white">
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <app-error-state
           [title]="'errors.unexpected' | translate"
           [retryLabel]="'common.retry' | translate"
@@ -76,7 +86,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
         />
       </div>
     } @else if (debts().length === 0) {
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white">
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <app-empty-state
           icon="pi-receipt"
           [title]="'debts.empty' | translate"
@@ -229,13 +239,21 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     section select {
       width: 100%;
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.8rem;
-      background: #fff;
-      color: #1e293b;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
       outline: 0;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+    }
+    section input:focus,
+    section select:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     section input {
       padding-left: 2.5rem;
@@ -243,11 +261,11 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     .debt-card {
       display: grid;
       gap: 1rem;
-      border: 1px solid #e2e8f0;
+      border: var(--border-width) solid var(--border-color);
       border-top: 4px solid #60a5fa;
       border-radius: 1rem;
       padding: 1.25rem;
-      background: #fff;
+      background: var(--color-surface);
       box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
       transition:
         opacity 0.15s,
@@ -262,16 +280,16 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       margin: 0;
     }
     h2 {
-      color: #1e293b;
+      color: var(--color-text-primary);
       font-size: 1rem;
     }
     p {
       margin-top: 0.25rem;
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.75rem;
     }
     .drag-handle {
-      color: #94a3b8;
+      color: var(--color-text-muted);
       cursor: grab;
       padding-top: 0.2rem;
     }
@@ -283,7 +301,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       font-weight: 750;
     }
     .method.installment {
-      background: #eff6ff;
+      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
       color: #2563eb;
     }
     .method.open {
@@ -291,8 +309,8 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       color: #7c3aed;
     }
     .method.full {
-      background: #f8fafc;
-      color: #475569;
+      background: var(--color-surface-muted);
+      color: var(--color-text-secondary);
     }
     .status.pending {
       background: #fff7ed;
@@ -313,7 +331,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       place-items: center;
       border: 0;
       border-radius: 0.55rem;
-      background: #fef2f2;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
       color: #dc2626;
       cursor: pointer;
     }
@@ -327,11 +345,11 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       gap: 0.2rem;
     }
     .amount-grid span {
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.68rem;
     }
     .amount-grid strong {
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.9rem;
     }
     .amount-grid .due {
@@ -342,9 +360,9 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       align-items: center;
       justify-content: space-between;
       gap: 0.75rem;
-      border-top: 1px solid #f1f5f9;
+      border-top: 1px solid var(--border-color);
       padding-top: 0.85rem;
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.75rem;
     }
     footer a {
@@ -376,7 +394,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       gap: 0.4rem;
     }
     .field label {
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.8rem;
       font-weight: 650;
     }
@@ -388,14 +406,23 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     .field textarea {
       width: 100%;
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0.65rem 0.8rem;
-      background: #fff;
-      color: #1e293b;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
       outline: 0;
       box-sizing: border-box;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     .two-columns {
       display: grid;
@@ -409,16 +436,16 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     .method-picker button {
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
+      border: var(--border-width) solid var(--border-color);
       border-radius: 0.7rem;
-      background: #fff;
-      color: #64748b;
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
       font: inherit;
       cursor: pointer;
     }
     .method-picker button.active {
       border-color: #2563eb;
-      background: #eff6ff;
+      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
       color: #1d4ed8;
       font-weight: 700;
     }
@@ -448,6 +475,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
   readonly loadError = signal(false);
   readonly search = signal('');
   readonly debtorFilter = signal('');
+  readonly hasSelectedFilter = signal(false);
   readonly dialogOpen = signal(false);
   readonly creating = signal(false);
   readonly deletingId = signal<number | null>(null);
@@ -461,12 +489,11 @@ export class DebtsComponent implements OnInit, OnDestroy {
     description: ['', Validators.maxLength(1000)],
     startDate: ['', Validators.required],
     installmentCount: [0, Validators.min(1)],
-    installmentAmount: [0, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
+    installmentAmount: [0, currencyAmountValidators()],
     principal: [0]
   });
 
   ngOnInit(): void {
-    this.load();
     if (this.canManage()) {
       this.userApi
         .getDebtors()
@@ -474,6 +501,9 @@ export class DebtsComponent implements OnInit, OnDestroy {
       this.adminApi
         .getInstallmentChoices()
         .subscribe({ next: (rows) => this.installmentChoices.set(rows), error: () => this.installmentChoices.set([]) });
+      this.loading.set(false);
+    } else {
+      this.load();
     }
   }
   ngOnDestroy(): void {
@@ -489,12 +519,15 @@ export class DebtsComponent implements OnInit, OnDestroy {
   }
   searchChanged(event: Event): void {
     this.search.set((event.target as HTMLInputElement).value.slice(0, 50));
+    this.hasSelectedFilter.set(true);
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.load(), 350);
   }
   filterChanged(event: Event): void {
-    this.debtorFilter.set((event.target as HTMLSelectElement).value);
-    this.load();
+    const value = (event.target as HTMLSelectElement).value;
+    this.debtorFilter.set(value);
+    this.hasSelectedFilter.set(Boolean(value));
+    if (value) this.load();
   }
   openCreate(): void {
     if (!this.canManage()) return;
@@ -518,7 +551,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
     const principal = this.form.controls.principal;
     const count = this.form.controls.installmentCount;
     if (method === 'OPEN') {
-      principal.setValidators([Validators.required, Validators.min(0.01), Validators.max(9999999.99)]);
+      principal.setValidators(currencyAmountValidators());
       count.clearValidators();
     } else {
       principal.clearValidators();

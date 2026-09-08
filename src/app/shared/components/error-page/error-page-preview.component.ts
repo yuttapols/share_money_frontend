@@ -19,20 +19,20 @@ import { TranslatePipe } from '@ngx-translate/core';
   `,
   styles: `
     .preview {
-      border: 1px solid #e8edf3;
+      border: var(--border-width) solid var(--border-color);
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
       padding: 2rem;
       text-align: center;
     }
     .preview h2 {
       margin: 0;
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 1.05rem;
     }
     .preview p {
       margin: 0.4rem 0 0;
-      color: #64748b;
+      color: var(--color-text-secondary);
     }
     .links {
       display: flex;
@@ -44,9 +44,9 @@ import { TranslatePipe } from '@ngx-translate/core';
     .links a {
       border-radius: 0.75rem;
       padding: 0.65rem 1.4rem;
-      border: 1px solid #d9e0e9;
-      background: #fff;
-      color: #334155;
+      border: var(--border-width) solid var(--border-color);
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font-weight: 700;
       text-decoration: none;
     }

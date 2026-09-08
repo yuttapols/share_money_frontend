@@ -16,6 +16,7 @@
   },
   "navigation": { "toggle": "เปิดหรือปิดเมนู" },
   "language": { "title": "ภาษา", "description": "เลือกภาษาที่ใช้แสดงผลในระบบ" },
+  "theme": { "toggle": "สลับธีมสว่าง/มืด" },
   "auth": {
     "username": "ชื่อผู้ใช้",
     "password": "รหัสผ่าน",
@@ -29,7 +30,9 @@
     "logout": "ออกจากระบบ",
     "logoutConfirmTitle": "ออกจากระบบ?",
     "logoutConfirmText": "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ",
-    "changePassword": "เปลี่ยนรหัสผ่าน"
+    "changePassword": "เปลี่ยนรหัสผ่าน",
+    "changePasswordConfirmTitle": "ยืนยันการเปลี่ยนรหัสผ่าน?",
+    "changePasswordConfirmText": "ระบบจะทำการออกจากระบบให้อัตโนมัติ และต้องเข้าสู่ระบบใหม่ด้วยรหัสผ่านใหม่"
   },
   "login": {
     "heroLine1": "เรื่องยืม เรื่องคืน",
@@ -45,14 +48,18 @@
     "required": "กรุณากรอกข้อมูล",
     "minlength": "กรุณากรอกอย่างน้อย {{min}} ตัวอักษร",
     "maxlength": "กรอกได้ไม่เกิน {{max}} ตัวอักษร",
+    "min": "กรุณากรอกค่าอย่างน้อย {{min}}",
+    "max": "กรอกได้ไม่เกิน {{max}}",
     "usernamePattern": "ใช้ได้เฉพาะตัวอักษรอังกฤษ ตัวเลข จุด ขีดกลาง และขีดล่าง",
     "phonePattern": "กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง ขึ้นต้นด้วย 0 จำนวน 10 หลัก",
+    "menuKeyPattern": "ใช้ได้เฉพาะตัวอักษรอังกฤษพิมพ์เล็ก ตัวเลข จุด และขีดล่าง",
+    "bankAccountPattern": "ใช้ได้เฉพาะตัวเลข ขีดกลาง และเว้นวรรค",
     "imageOnly": "กรุณาเลือกไฟล์รูปภาพชนิด JPG, JPEG, PNG หรือ WEBP เท่านั้น",
     "imageMaxSize": "รูปภาพต้องมีขนาดไม่เกิน 2 MB",
     "documentType": "รองรับเฉพาะไฟล์ PDF, DOC และ DOCX",
     "documentMaxSize": "ไฟล์เอกสารต้องมีขนาดไม่เกิน 10 MB",
-    "slipMaxSize": "รูปสลิปต้องมีขนาดไม่เกิน 1 MB"
-    ,"excelType": "รองรับเฉพาะไฟล์ Excel นามสกุล .xlsx"
+    "slipMaxSize": "รูปสลิปต้องมีขนาดไม่เกิน 1 MB",
+    "excelType": "รองรับเฉพาะไฟล์ Excel นามสกุล .xlsx"
   },
   "menu": {
     "dashboard": "แดชบอร์ด",
@@ -66,13 +73,24 @@
     "admin.installments": "ตั้งค่าจำนวนงวด",
     "admin.logs": "ประวัติเข้าสู่ระบบ",
     "admin.creditors": "จัดการเจ้าหนี้",
-    "profile": "โปรไฟล์"
+    "profile": "โปรไฟล์",
+    "bankAccount": "บัญชีสำหรับรับชำระ",
+    "documentUpload": "อัปโหลดเอกสาร",
+    "slip": "สลิปการชำระเงิน"
   },
   "dashboard": {
     "activeUsersTitle": "ผู้ใช้งานที่ใช้งานอยู่",
     "activeUsersEmpty": "ยังไม่มีผู้ใช้งานที่ใช้งานอยู่",
     "totalUsersTitle": "ผู้ใช้งานทั้งหมด",
     "totalUsersEmpty": "ยังไม่มีผู้ใช้งาน",
+    "totalDebtorsTitle": "จำนวนลูกหนี้",
+    "totalDebtorsEmpty": "ยังไม่มีลูกหนี้",
+    "owingDebtorsTitle": "ลูกหนี้ที่ยังค้างชำระ",
+    "owingDebtorsEmpty": "ไม่มีลูกหนี้ค้างชำระ",
+    "debtorsListTitle": "รายการลูกหนี้",
+    "debtorsListDescription": "ภาพรวมรายชื่อลูกหนี้ของคุณ",
+    "debtorOwing": "ค้างชำระ",
+    "debtorPaidUp": "ชำระครบแล้ว",
     "quickActions": "เมนูลัด",
     "addDebtor": "เพิ่มลูกหนี้",
     "addDebtorDescription": "สร้างบัญชีลูกหนี้ใหม่",
@@ -80,6 +98,7 @@
     "addCreditorDescription": "สร้างบัญชีเจ้าหนี้ใหม่",
     "exportReport": "ออกรายงาน",
     "exportReportDescription": "ดูและดาวน์โหลดรายงาน",
+    "quickActionButton": "ไปที่หน้านี้",
     "creditorsListTitle": "เจ้าหนี้ทั้งหมด",
     "creditorsListDescription": "ดูภาพรวมและจัดการรายชื่อเจ้าหนี้",
     "creditorsEmpty": "ยังไม่มีเจ้าหนี้",
@@ -167,6 +186,7 @@
     "emptyDescription": "เพิ่มรายการหนี้แรกเพื่อเริ่มติดตามยอดชำระ",
     "debtor": "ลูกหนี้",
     "chooseDebtor": "เลือกลูกหนี้",
+    "chooseDebtorDescription": "เลือกลูกหนี้เพื่อดูรายการหนี้",
     "method": "ประเภทหนี้",
     "debtTitle": "ชื่อรายการ",
     "descriptionField": "รายละเอียด",
@@ -225,6 +245,7 @@
     "chooseImage": "เลือกรูปสลิป",
     "upload": "อัปโหลดสลิป",
     "fileHint": "รองรับ JPG, JPEG, PNG หรือ WEBP ขนาดไม่เกิน 1 MB",
+    "limitHint": "เก็บสลิปไว้ได้สูงสุด 3 ใบต่อลูกหนี้หนึ่งคน หากอัปโหลดใบใหม่ ใบเก่าสุดจะถูกลบอัตโนมัติ",
     "creditorMissing": "ไม่พบข้อมูลเจ้าหนี้ของบัญชีนี้ กรุณาติดต่อผู้ดูแลระบบ",
     "deleteTitle": "ลบสลิปนี้?",
     "deleteDescription": "รูปสลิปจะถูกลบออกจากระบบและไม่สามารถย้อนกลับได้"
@@ -249,11 +270,20 @@
   },
   "bank": {
     "title": "บัญชีสำหรับรับชำระ",
-    "description": "ข้อมูลบัญชีธนาคารสำหรับการโอนชำระ",
+    "description": "รายการบัญชีธนาคารสำหรับรับการโอนชำระ",
     "bankName": "ชื่อธนาคาร",
     "accountNo": "เลขที่บัญชี",
     "accountName": "ชื่อบัญชี",
-    "paymentNote": "หมายเหตุการชำระเงิน"
+    "paymentNote": "หมายเหตุการชำระเงิน",
+    "actions": "จัดการ",
+    "add": "เพิ่มบัญชี",
+    "editAccount": "แก้ไขบัญชี",
+    "empty": "ยังไม่มีบัญชีสำหรับรับชำระ",
+    "emptyDescription": "เพิ่มบัญชีธนาคารบัญชีแรกเพื่อเริ่มรับชำระเงิน",
+    "emptyReadonlyDescription": "เจ้าหนี้ของคุณยังไม่ได้เพิ่มบัญชีสำหรับรับชำระ",
+    "chooseBank": "เลือกธนาคาร",
+    "deleteTitle": "ลบบัญชีนี้?",
+    "deleteDescription": "บัญชีสำหรับรับชำระนี้จะถูกลบออกอย่างถาวร"
   },
   "admin": {
     "creditorsTitle": "จัดการเจ้าหนี้",
@@ -315,6 +345,7 @@
     "profileUpdated": "บันทึกข้อมูลโปรไฟล์เรียบร้อยแล้ว",
     "avatarDeleted": "ลบรูปโปรไฟล์เรียบร้อยแล้ว",
     "bankUpdated": "บันทึกบัญชีธนาคารเรียบร้อยแล้ว",
+    "bankDeleted": "ลบบัญชีธนาคารเรียบร้อยแล้ว",
     "slipUploaded": "อัปโหลดสลิปเรียบร้อยแล้ว",
     "slipDeleted": "ลบสลิปเรียบร้อยแล้ว",
     "debtCreated": "เพิ่มรายการหนี้เรียบร้อยแล้ว",
@@ -322,8 +353,8 @@
     "debtReordered": "บันทึกลำดับรายการหนี้แล้ว",
     "paymentUpdated": "อัปเดตการชำระเงินเรียบร้อยแล้ว",
     "openRecordUpdated": "บันทึกรายการกู้เปิดเรียบร้อยแล้ว",
-    "openRecordDeleted": "ลบรายการกู้เปิดเรียบร้อยแล้ว"
-    ,"creditorCreated": "เพิ่มเจ้าหนี้เรียบร้อยแล้ว",
+    "openRecordDeleted": "ลบรายการกู้เปิดเรียบร้อยแล้ว",
+    "creditorCreated": "เพิ่มเจ้าหนี้เรียบร้อยแล้ว",
     "choiceUpdated": "อัปเดตตัวเลือกจำนวนงวดแล้ว",
     "menuUpdated": "บันทึกข้อมูลเมนูเรียบร้อยแล้ว",
     "menuDeleted": "ลบเมนูเรียบร้อยแล้ว",

@@ -43,16 +43,16 @@ export interface AppTableColumn {
     :host {
       display: block;
       overflow: hidden;
-      border: 1px solid #e8edf3;
+      border: var(--border-width) solid var(--border-color);
       border-radius: 0.85rem;
     }
     :host ::ng-deep .p-datatable-thead > tr > th {
-      background: #f8fafc;
-      color: #475569;
+      background: var(--color-surface-muted);
+      color: var(--color-text-secondary);
       font-size: 0.8rem;
     }
     :host ::ng-deep .p-datatable-tbody > tr > td {
-      color: #334155;
+      color: var(--color-text-primary);
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush

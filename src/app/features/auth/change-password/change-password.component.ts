@@ -5,10 +5,10 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { AppButtonComponent } from '../../../shared/components/app-button/app-button.component';
 import { SweetAlertService } from '../../../shared/services/sweet-alert.service';
+import { passwordValidators, resolveValidationError } from '../../../shared/utils/validators.util';
 
 @Component({
   selector: 'app-change-password',
-  standalone: true,
   imports: [ReactiveFormsModule, TranslatePipe, AppButtonComponent],
   template: `
     <section id="security" class="security-card">
@@ -33,7 +33,9 @@ import { SweetAlertService } from '../../../shared/services/sweet-alert.service'
           (blur)="form.controls.oldPassword.markAsTouched()"
         />
         @if (showError('oldPassword')) {
-          <small class="field-error" role="alert">{{ oldPasswordError() | translate: { max: 100 } }}</small>
+          <small class="field-error" role="alert">{{
+            oldPasswordError()?.key | translate: oldPasswordError()?.params
+          }}</small>
         }
         <label for="newPassword">{{ 'auth.newPassword' | translate }} <b>*</b></label>
         <input
@@ -47,7 +49,9 @@ import { SweetAlertService } from '../../../shared/services/sweet-alert.service'
           (blur)="form.controls.newPassword.markAsTouched()"
         />
         @if (showError('newPassword')) {
-          <small class="field-error" role="alert">{{ newPasswordError() | translate: { min: 6, max: 100 } }}</small>
+          <small class="field-error" role="alert">{{
+            newPasswordError()?.key | translate: newPasswordError()?.params
+          }}</small>
         }
         @if (editing()) {
           <div class="form-actions">
@@ -64,10 +68,10 @@ import { SweetAlertService } from '../../../shared/services/sweet-alert.service'
   `,
   styles: `
     .security-card {
-      border: 1px solid #e8edf3;
+      border: var(--border-width) solid var(--border-color);
       border-top: 4px solid #f59e0b;
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
       overflow: hidden;
     }
     .security-card > header {
@@ -79,7 +83,7 @@ import { SweetAlertService } from '../../../shared/services/sweet-alert.service'
     }
     .security-card h2 {
       margin: 0;
-      color: #1e293b;
+      color: var(--color-text-primary);
       font-size: 1rem;
     }
     .edit-button {
@@ -104,7 +108,7 @@ import { SweetAlertService } from '../../../shared/services/sweet-alert.service'
     }
     .security-card label {
       margin: 0.85rem 0 0.4rem;
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.83rem;
       font-weight: 650;
     }
@@ -113,21 +117,24 @@ import { SweetAlertService } from '../../../shared/services/sweet-alert.service'
     }
     .security-card input {
       min-height: 2.8rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.85rem;
-      background: #fff !important;
-      color: #1e293b !important;
-      -webkit-text-fill-color: #1e293b;
-      box-shadow: 0 0 0 1000px #fff inset;
+      background: var(--color-surface) !important;
+      color: var(--color-text-primary) !important;
+      -webkit-text-fill-color: var(--color-text-primary);
+      box-shadow: 0 0 0 1000px var(--color-surface) inset;
       font: inherit;
       outline: 0;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
     }
     .security-card input:focus {
-      border-color: #2563eb;
+      border-color: var(--input-focus-border);
       box-shadow:
-        0 0 0 3px rgba(37, 99, 235, 0.1),
-        0 0 0 1000px #fff inset;
+        var(--input-focus-ring),
+        0 0 0 1000px var(--color-surface) inset;
     }
     .security-card input.invalid {
       border-color: #dc2626;
@@ -136,13 +143,13 @@ import { SweetAlertService } from '../../../shared/services/sweet-alert.service'
       border-color: #dc2626;
       box-shadow:
         0 0 0 3px rgba(220, 38, 38, 0.1),
-        0 0 0 1000px #fff inset;
+        0 0 0 1000px var(--color-surface) inset;
     }
     .security-card input:disabled {
-      background: #f8fafc !important;
-      color: #94a3b8 !important;
-      -webkit-text-fill-color: #94a3b8;
-      box-shadow: 0 0 0 1000px #f8fafc inset;
+      background: var(--color-surface-muted) !important;
+      color: var(--color-text-muted) !important;
+      -webkit-text-fill-color: var(--color-text-muted);
+      box-shadow: 0 0 0 1000px var(--color-surface-muted) inset;
       cursor: not-allowed;
     }
     .security-card .field-error {
@@ -159,7 +166,7 @@ import { SweetAlertService } from '../../../shared/services/sweet-alert.service'
     .cancel-button {
       border: 1px solid #fecaca;
       border-radius: 0.7rem;
-      background: #fef2f2;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
       padding: 0.65rem 1rem;
       color: #dc2626;
       font: inherit;
@@ -181,7 +188,7 @@ export class ChangePasswordComponent {
   readonly editing = signal(false);
   readonly form = this.fb.nonNullable.group({
     oldPassword: ['', [Validators.required, Validators.maxLength(100)]],
-    newPassword: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(100)]]
+    newPassword: ['', passwordValidators()]
   });
 
   constructor() {
@@ -199,21 +206,26 @@ export class ChangePasswordComponent {
     this.form.disable();
   }
 
-  submit(): void {
+  async submit(): Promise<void> {
     if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
       return;
     }
+    const confirmed = await this.toast.confirm({
+      titleKey: 'auth.changePasswordConfirmTitle',
+      textKey: 'auth.changePasswordConfirmText',
+      confirmButtonKey: 'common.confirm',
+      cancelButtonKey: 'common.cancel'
+    });
+    if (!confirmed) return;
     this.saving.set(true);
     const value = this.form.getRawValue();
     this.auth
       .changePassword(value.oldPassword, value.newPassword)
       .pipe(finalize(() => this.saving.set(false)))
       .subscribe(() => {
-        this.form.reset();
-        this.form.disable();
-        this.editing.set(false);
         this.toast.success('toast.passwordChanged');
+        this.auth.logout();
       });
   }
 
@@ -222,16 +234,11 @@ export class ChangePasswordComponent {
     return control.invalid && (control.dirty || control.touched);
   }
 
-  oldPasswordError(): string {
-    const errors = this.form.controls.oldPassword.errors;
-    if (errors?.['required']) return 'validation.required';
-    return 'validation.maxlength';
+  oldPasswordError() {
+    return resolveValidationError(this.form.controls.oldPassword.errors);
   }
 
-  newPasswordError(): string {
-    const errors = this.form.controls.newPassword.errors;
-    if (errors?.['required']) return 'validation.required';
-    if (errors?.['minlength']) return 'validation.minlength';
-    return 'validation.maxlength';
+  newPasswordError() {
+    return resolveValidationError(this.form.controls.newPassword.errors);
   }
 }

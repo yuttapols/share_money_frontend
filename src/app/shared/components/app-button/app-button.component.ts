@@ -47,8 +47,8 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       opacity: 0.6;
     }
     .app-button--secondary {
-      background: #e2e8f0;
-      color: #334155;
+      background: var(--color-surface-muted);
+      color: var(--color-text-primary);
     }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush

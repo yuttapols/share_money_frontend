@@ -18,13 +18,13 @@ export class SlipApiService {
       .pipe(map((response) => response.data));
   }
 
-  get(debtorUsername = '', creditorUsername = ''): Observable<Slip | null> {
+  getAll(debtorUsername = '', creditorUsername = ''): Observable<Slip[]> {
     let params = new HttpParams();
     if (debtorUsername) params = params.set('debtorUsername', debtorUsername);
     if (creditorUsername) params = params.set('creditorUsername', creditorUsername);
     return this.http
-      .get<ApiResponse<Slip | null>>(`${environment.apiUrl}/slips`, { params })
-      .pipe(map((response) => response?.data ?? null));
+      .get<ApiResponse<Slip[]>>(`${environment.apiUrl}/slips`, { params })
+      .pipe(map((response) => response.data));
   }
 
   getFile(id: number): Observable<Blob> {

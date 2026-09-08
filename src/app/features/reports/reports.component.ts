@@ -14,25 +14,26 @@ import { FileDownloadService } from '../../shared/services/file-download.service
 
 @Component({
   selector: 'app-reports',
-  standalone: true,
   imports: [FormsModule, DecimalPipe, TranslatePipe, AppButtonComponent, EmptyStateComponent, ErrorStateComponent],
   template: `
     <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="m-0 text-2xl font-bold text-slate-800">{{ 'reports.title' | translate }}</h1>
-        <p class="mb-0 mt-1 text-sm text-slate-500">{{ 'reports.description' | translate }}</p>
+        <h1 class="m-0 text-base font-bold text-slate-800 dark:text-slate-100">{{ 'reports.title' | translate }}</h1>
+        <p class="mb-0 mt-1 text-sm text-slate-500 dark:text-slate-400">{{ 'reports.description' | translate }}</p>
       </div>
       <app-button icon="pi-file-pdf" [loading]="downloading()" [disabled]="!report()" (pressed)="downloadPdf()">{{
         'reports.downloadPdf' | translate
       }}</app-button>
     </header>
 
-    <section class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">{{
+    <section
+      class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+    >
+      <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{
         'reports.debtorFilter' | translate
       }}</label>
       <select
-        class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 sm:max-w-sm"
+        class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-shadow focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:max-w-sm"
         maxlength="50"
         [(ngModel)]="selectedDebtor"
         (ngModelChange)="load()"
@@ -47,11 +48,11 @@ import { FileDownloadService } from '../../shared/services/file-download.service
     @if (loading()) {
       <section class="mt-5 grid gap-4 sm:grid-cols-3">
         @for (row of [1, 2, 3]; track row) {
-          <div class="h-32 animate-pulse rounded-2xl bg-slate-200"></div>
+          <div class="h-32 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700"></div>
         }
       </section>
     } @else if (loadError()) {
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white">
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <app-error-state
           [title]="'errors.unexpected' | translate"
           [retryLabel]="'common.retry' | translate"
@@ -74,7 +75,9 @@ import { FileDownloadService } from '../../shared/services/file-download.service
             ><strong>&#3647;{{ data.total | number: '1.2-2' }}</strong>
           </article>
         </section>
-        <section class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section
+          class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
+        >
           @if (data.lines.length === 0) {
             <app-empty-state
               icon="pi-check-circle"
@@ -85,7 +88,7 @@ import { FileDownloadService } from '../../shared/services/file-download.service
             <div class="overflow-x-auto">
               <table class="w-full min-w-[38rem] border-collapse text-left">
                 <thead>
-                  <tr class="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                     <th>{{ 'reports.debtTitle' | translate }}</th>
                     <th>{{ 'reports.detail' | translate }}</th>
                     <th class="text-right">{{ 'reports.amount' | translate }}</th>
@@ -94,10 +97,12 @@ import { FileDownloadService } from '../../shared/services/file-download.service
                 </thead>
                 <tbody>
                   @for (line of data.lines; track line.title + line.what) {
-                    <tr class="border-t border-slate-100">
-                      <td class="font-semibold text-slate-800">{{ line.title }}</td>
-                      <td class="text-slate-600">{{ line.what }}</td>
-                      <td class="text-right font-semibold text-slate-700">&#3647;{{ line.due | number: '1.2-2' }}</td>
+                    <tr class="border-t border-slate-100 dark:border-slate-700">
+                      <td class="font-semibold text-slate-800 dark:text-slate-100">{{ line.title }}</td>
+                      <td class="text-slate-600 dark:text-slate-300">{{ line.what }}</td>
+                      <td class="text-right font-semibold text-slate-700 dark:text-slate-300">
+                        &#3647;{{ line.due | number: '1.2-2' }}
+                      </td>
                       <td class="text-center">
                         <span [class]="line.paid ? 'paid' : 'pending'">{{
                           (line.paid ? 'reports.paid' : 'reports.pending') | translate

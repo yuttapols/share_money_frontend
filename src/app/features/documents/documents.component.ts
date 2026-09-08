@@ -13,10 +13,10 @@ import { ErrorStateComponent } from '../../shared/components/error-state/error-s
 import { FileDownloadService } from '../../shared/services/file-download.service';
 import { SweetAlertService } from '../../shared/services/sweet-alert.service';
 import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '../../shared/utils/document-file.util';
+import { resolveValidationError } from '../../shared/utils/validators.util';
 
 @Component({
   selector: 'app-documents',
-  standalone: true,
   imports: [
     ReactiveFormsModule,
     TranslatePipe,
@@ -28,19 +28,19 @@ import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '
   template: `
     <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="m-0 text-2xl font-bold text-slate-800">{{ 'documents.title' | translate }}</h1>
-        <p class="mb-0 mt-1 text-sm text-slate-500">{{ 'documents.description' | translate }}</p>
+        <h1 class="m-0 text-base font-bold text-slate-800 dark:text-slate-100">{{ 'documents.title' | translate }}</h1>
+        <p class="mb-0 mt-1 text-sm text-slate-500 dark:text-slate-400">{{ 'documents.description' | translate }}</p>
       </div>
       <app-button icon="pi-upload" (pressed)="openUpload()">{{ 'documents.upload' | translate }}</app-button>
     </header>
 
     <div class="mt-5 flex flex-col gap-3 sm:flex-row">
       <div class="relative flex-1 sm:max-w-sm">
-        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></span>
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></span>
         <input
           type="search"
           maxlength="50"
-          class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none focus:border-blue-500"
+          class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm outline-none transition-shadow focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-800"
           [placeholder]="'documents.search' | translate"
           (input)="setSearch($event)"
         />
@@ -50,11 +50,11 @@ import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '
     @if (loading()) {
       <section class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         @for (row of [1, 2, 3, 4, 5, 6]; track row) {
-          <div class="h-40 animate-pulse rounded-2xl bg-slate-200"></div>
+          <div class="h-40 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700"></div>
         }
       </section>
     } @else if (loadError()) {
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white">
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <app-error-state
           [title]="'errors.unexpected' | translate"
           [retryLabel]="'common.retry' | translate"
@@ -62,7 +62,7 @@ import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '
         />
       </div>
     } @else if (filteredDocuments().length === 0) {
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white">
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <app-empty-state
           icon="pi-file"
           [title]="(search() ? 'documents.notFound' : 'documents.empty') | translate"
@@ -75,21 +75,25 @@ import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '
       <section class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         @for (document of filteredDocuments(); track document.id) {
           <article
-            class="rounded-2xl border border-slate-200 border-t-blue-400 bg-white p-5 shadow-sm [border-top-width:4px]"
+            class="rounded-2xl border border-slate-200 border-t-blue-400 bg-white p-5 shadow-sm [border-top-width:4px] dark:border-slate-700 dark:bg-slate-800"
           >
             <div class="flex items-start justify-between gap-3">
               <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-blue-50 text-xl text-blue-600">
                 <span class="pi pi-file-pdf"></span>
               </span>
-              <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">
+              <span
+                class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+              >
                 {{ (document.scope === 'TEMPLATE' ? 'documents.template' : 'documents.debtorDocument') | translate }}
               </span>
             </div>
-            <h2 class="mb-0 mt-4 line-clamp-2 text-base font-semibold text-slate-800">{{ document.title }}</h2>
-            <p class="mb-0 mt-1 h-5 text-xs text-slate-500">
+            <h2 class="mb-0 mt-4 line-clamp-2 text-base font-semibold text-slate-800 dark:text-slate-100">
+              {{ document.title }}
+            </h2>
+            <p class="mb-0 mt-1 h-5 text-xs text-slate-500 dark:text-slate-400">
               {{ document.debtorUsername || ('documents.allDebtors' | translate) }}
             </p>
-            <div class="mt-5 flex gap-2 border-t border-slate-100 pt-4">
+            <div class="mt-5 flex gap-2 border-t border-slate-100 pt-4 dark:border-slate-700">
               <button
                 type="button"
                 class="document-action download"
@@ -119,7 +123,7 @@ import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '
           <label>{{ 'documents.documentTitle' | translate }} <b>*</b></label>
           <input type="text" formControlName="title" maxlength="255" [class.invalid]="showTitleError()" />
           @if (showTitleError()) {
-            <small>{{ titleError() | translate: { max: 255 } }}</small>
+            <small>{{ titleError()?.key | translate: titleError()?.params }}</small>
           }
         </div>
         <div class="field">
@@ -168,11 +172,11 @@ import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '
     }
     .document-action.download {
       flex: 1;
-      background: #eff6ff;
+      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
       color: #2563eb;
     }
     .document-action.delete {
-      background: #fef2f2;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
       color: #dc2626;
     }
     .document-action:disabled {
@@ -184,7 +188,7 @@ import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '
       gap: 0.4rem;
     }
     .field label {
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.82rem;
       font-weight: 650;
     }
@@ -193,20 +197,23 @@ import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '
       color: #dc2626;
     }
     .field span {
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.72rem;
     }
     .field input,
     .field select,
     .file-picker {
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.8rem;
-      background: #fff;
-      color: #1e293b;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
       outline: 0;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
     }
     .file-picker {
       display: flex;
@@ -217,8 +224,8 @@ import { DOCUMENT_FILE_ACCEPT, isAllowedDocumentFile, MAX_DOCUMENT_SIZE } from '
     .field input:focus,
     .field select:focus,
     .file-picker:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     .field input.invalid {
       border-color: #dc2626;
@@ -356,7 +363,7 @@ export class DocumentsComponent implements OnInit {
     return control.invalid && (control.dirty || control.touched);
   }
 
-  titleError(): string {
-    return this.form.controls.title.hasError('required') ? 'validation.required' : 'validation.maxlength';
+  titleError() {
+    return resolveValidationError(this.form.controls.title.errors);
   }
 }

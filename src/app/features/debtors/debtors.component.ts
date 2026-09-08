@@ -11,12 +11,12 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
 import { SweetAlertService } from '../../shared/services/sweet-alert.service';
+import { passwordValidators, usernameValidators } from '../../shared/utils/validators.util';
 
 type SortField = 'name' | 'username';
 
 @Component({
   selector: 'app-debtors',
-  standalone: true,
   imports: [
     ReactiveFormsModule,
     TranslatePipe,
@@ -29,20 +29,24 @@ type SortField = 'name' | 'username';
   template: `
     <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="m-0 text-2xl font-bold text-slate-800">{{ 'debtors.title' | translate }}</h1>
-        <p class="mb-0 mt-1 text-sm text-slate-500">{{ 'debtors.description' | translate }}</p>
+        <h1 class="m-0 text-base font-bold text-slate-800 dark:text-slate-100">{{ 'debtors.title' | translate }}</h1>
+        <p class="mb-0 mt-1 text-sm text-slate-500 dark:text-slate-400">{{ 'debtors.description' | translate }}</p>
       </div>
       @if (canCreate()) {
         <app-button icon="pi-plus" (pressed)="openCreate()">{{ 'debtors.add' | translate }}</app-button>
       }
     </header>
 
-    <section class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div class="flex flex-col gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:justify-between">
+    <section
+      class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
+    >
+      <div
+        class="flex flex-col gap-3 border-b border-slate-100 p-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between"
+      >
         <div class="relative w-full sm:max-w-sm">
-          <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></span>
+          <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></span>
           <input
-            class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-700 outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-50"
+            class="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm text-slate-700 outline-none transition-shadow focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
             type="search"
             maxlength="50"
             [value]="search()"
@@ -52,7 +56,7 @@ type SortField = 'name' | 'username';
         </div>
         <button
           type="button"
-          class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50"
+          class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-800/50"
           (click)="toggleSort()"
         >
           <span class="pi pi-sort-alt"></span>{{ sortLabel() | translate }}
@@ -87,7 +91,9 @@ type SortField = 'name' | 'username';
         <div class="overflow-x-auto">
           <table class="w-full min-w-[42rem] border-collapse text-left">
             <thead>
-              <tr class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+              <tr
+                class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/50 dark:text-slate-400"
+              >
                 <th class="px-5 py-3 font-semibold">{{ 'debtors.name' | translate }}</th>
                 <th class="px-5 py-3 font-semibold">{{ 'auth.username' | translate }}</th>
                 <th class="px-5 py-3 font-semibold">{{ 'debtors.creditor' | translate }}</th>
@@ -96,7 +102,9 @@ type SortField = 'name' | 'username';
             </thead>
             <tbody>
               @for (debtor of pagedDebtors(); track debtor.id) {
-                <tr class="border-t border-slate-100 hover:bg-slate-50/70">
+                <tr
+                  class="border-t border-slate-100 hover:bg-slate-50/70 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                >
                   <td class="px-5 py-3">
                     <div class="flex items-center gap-3">
                       <span
@@ -104,11 +112,11 @@ type SortField = 'name' | 'username';
                       >
                         {{ initials(debtor.name) }}
                       </span>
-                      <strong class="text-sm text-slate-800">{{ debtor.name }}</strong>
+                      <strong class="text-sm text-slate-800 dark:text-slate-100">{{ debtor.name }}</strong>
                     </div>
                   </td>
-                  <td class="px-5 py-3 text-sm text-slate-600">{{ debtor.username }}</td>
-                  <td class="px-5 py-3 text-sm text-slate-600">{{ debtor.creditorUsername }}</td>
+                  <td class="px-5 py-3 text-sm text-slate-600 dark:text-slate-300">{{ debtor.username }}</td>
+                  <td class="px-5 py-3 text-sm text-slate-600 dark:text-slate-300">{{ debtor.creditorUsername }}</td>
                   <td class="px-5 py-3">
                     <div class="flex justify-end gap-1">
                       <button
@@ -138,8 +146,8 @@ type SortField = 'name' | 'username';
             </tbody>
           </table>
         </div>
-        <footer class="flex items-center justify-between border-t border-slate-100 px-5 py-3">
-          <span class="text-xs text-slate-500">
+        <footer class="flex items-center justify-between border-t border-slate-100 px-5 py-3 dark:border-slate-700">
+          <span class="text-xs text-slate-500 dark:text-slate-400">
             {{ 'common.pageOf' | translate: { current: page(), total: totalPages() } }}
           </span>
           <div class="flex gap-1">
@@ -221,17 +229,17 @@ type SortField = 'name' | 'username';
       color: #2563eb;
     }
     .icon-action.edit:hover {
-      background: #eff6ff;
+      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
     }
     .icon-action.delete {
       color: #dc2626;
     }
     .icon-action.delete:hover {
-      background: #fef2f2;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
     }
     .page-button {
-      border: 1px solid #e2e8f0;
-      color: #475569;
+      border: var(--border-width) solid var(--border-color);
+      color: var(--color-text-secondary);
     }
     .page-button:disabled {
       cursor: not-allowed;
@@ -242,7 +250,7 @@ type SortField = 'name' | 'username';
       gap: 0.4rem;
     }
     .field label {
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.82rem;
       font-weight: 650;
     }
@@ -251,22 +259,25 @@ type SortField = 'name' | 'username';
       color: #dc2626;
     }
     .field span {
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.72rem;
     }
     .field input {
       height: 2.75rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.8rem;
-      background: #fff;
-      color: #1e293b;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
       outline: 0;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
     }
     .field input:focus {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     .field input.invalid {
       border-color: #dc2626;
@@ -315,8 +326,8 @@ export class DebtorsComponent implements OnInit {
   });
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(50)]],
-    username: ['', [Validators.required, Validators.maxLength(50), Validators.pattern(/^[a-zA-Z0-9._-]+$/)]],
-    password: ['', [Validators.required, Validators.minLength(6), Validators.maxLength(50)]]
+    username: ['', usernameValidators()],
+    password: ['', passwordValidators(6, 50)]
   });
 
   ngOnInit(): void {
@@ -354,7 +365,7 @@ export class DebtorsComponent implements OnInit {
     if (!this.canCreate()) return;
     this.editing.set(null);
     this.form.reset();
-    this.form.controls.password.setValidators([Validators.required, Validators.minLength(6), Validators.maxLength(50)]);
+    this.form.controls.password.setValidators(passwordValidators(6, 50));
     this.form.controls.password.updateValueAndValidity();
     this.dialogOpen.set(true);
   }
