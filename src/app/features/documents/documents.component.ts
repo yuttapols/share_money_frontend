@@ -4,6 +4,7 @@ import { TranslatePipe, TranslateService } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 import { DocumentItem } from '../../core/models/phase-three.model';
 import { Debtor } from '../../core/models/user.model';
+import { AuthService } from '../../core/services/auth.service';
 import { DocumentApiService } from '../../core/services/document-api.service';
 import { UserApiService } from '../../core/services/user-api.service';
 import { AppButtonComponent } from '../../shared/components/app-button/app-button.component';
@@ -31,7 +32,9 @@ import { resolveValidationError } from '../../shared/utils/validators.util';
         <h1 class="m-0 text-base font-bold text-slate-800 dark:text-slate-100">{{ 'documents.title' | translate }}</h1>
         <p class="mb-0 mt-1 text-sm text-slate-500 dark:text-slate-400">{{ 'documents.description' | translate }}</p>
       </div>
-      <app-button icon="pi-upload" (pressed)="openUpload()">{{ 'documents.upload' | translate }}</app-button>
+      @if (canManage()) {
+        <app-button icon="pi-upload" (pressed)="openUpload()">{{ 'documents.upload' | translate }}</app-button>
+      }
     </header>
 
     <div class="mt-5 flex flex-col gap-3 sm:flex-row">
@@ -67,7 +70,7 @@ import { resolveValidationError } from '../../shared/utils/validators.util';
           icon="pi-file"
           [title]="(search() ? 'documents.notFound' : 'documents.empty') | translate"
           [message]="(search() ? 'documents.notFoundDescription' : 'documents.emptyDescription') | translate"
-          [actionLabel]="search() ? '' : ('documents.upload' | translate)"
+          [actionLabel]="!search() && canManage() ? ('documents.upload' | translate) : ''"
           (action)="openUpload()"
         />
       </div>
@@ -103,14 +106,16 @@ import { resolveValidationError } from '../../shared/utils/validators.util';
                 <span [class]="downloadingId() === document.id ? 'pi pi-spin pi-spinner' : 'pi pi-download'"></span>
                 {{ 'documents.download' | translate }}
               </button>
-              <button
-                type="button"
-                class="document-action delete"
-                [disabled]="deletingId() === document.id"
-                (click)="deleteDocument(document)"
-              >
-                <span [class]="deletingId() === document.id ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span>
-              </button>
+              @if (canManage()) {
+                <button
+                  type="button"
+                  class="document-action delete"
+                  [disabled]="deletingId() === document.id"
+                  (click)="deleteDocument(document)"
+                >
+                  <span [class]="deletingId() === document.id ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span>
+                </button>
+              }
             </div>
           </article>
         }
@@ -237,10 +242,12 @@ export class DocumentsComponent implements OnInit {
   private readonly fb = inject(FormBuilder);
   private readonly documentApi = inject(DocumentApiService);
   private readonly userApi = inject(UserApiService);
+  private readonly auth = inject(AuthService);
   private readonly downloads = inject(FileDownloadService);
   private readonly alerts = inject(SweetAlertService);
   private readonly translate = inject(TranslateService);
   readonly fileAccept = DOCUMENT_FILE_ACCEPT;
+  readonly canManage = computed(() => ['ADMIN', 'CREDITOR'].includes(this.auth.currentUser()?.role ?? ''));
   readonly documents = signal<DocumentItem[]>([]);
   readonly debtors = signal<Debtor[]>([]);
   readonly loading = signal(true);
@@ -266,7 +273,11 @@ export class DocumentsComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
-    this.userApi.getDebtors().subscribe({ next: (rows) => this.debtors.set(rows), error: () => this.debtors.set([]) });
+    if (this.canManage()) {
+      this.userApi
+        .getDebtors()
+        .subscribe({ next: (rows) => this.debtors.set(rows), error: () => this.debtors.set([]) });
+    }
   }
 
   load(): void {

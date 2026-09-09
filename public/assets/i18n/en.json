@@ -117,7 +117,11 @@
     "tableRole": "Role",
     "tableAction": "Action",
     "actionLogin": "Signed in",
-    "actionLogout": "Signed out"
+    "actionLogout": "Signed out",
+    "myDueAmountTitle": "Amount due",
+    "myDueAmountEmpty": "Nothing due",
+    "myCreditorCountTitle": "Creditors",
+    "myCreditorCountEmpty": "No creditors yet"
   },
   "profile": {
     "account": "My account",
@@ -255,6 +259,7 @@
     "description": "Review amounts due and download a PDF report",
     "downloadPdf": "Download PDF",
     "debtorFilter": "Filter by debtor",
+    "selectDebtorPlaceholder": "-- Select debtor --",
     "allDebtors": "All debtors",
     "issuedAt": "Issued date",
     "dueCount": "Items due",
@@ -266,7 +271,9 @@
     "paid": "Paid",
     "pending": "Pending",
     "empty": "Nothing is due",
-    "emptyDescription": "No outstanding amounts were found for this filter"
+    "emptyDescription": "No outstanding amounts were found for this filter",
+    "selectDebtorTitle": "Select a debtor",
+    "selectDebtorDescription": "Choose a debtor from the filter above to view the payment report"
   },
   "bank": {
     "title": "Payment accounts",
@@ -283,7 +290,10 @@
     "emptyReadonlyDescription": "Your creditor has not added a payment account yet",
     "chooseBank": "Choose a bank",
     "deleteTitle": "Delete this account?",
-    "deleteDescription": "This payment account will be permanently removed"
+    "deleteDescription": "This payment account will be permanently removed",
+    "copy": "Copy",
+    "copied": "Account number copied",
+    "paymentDeadlineNotice": "** Payment must be made by the 1st of every month"
   },
   "admin": {
     "creditorsTitle": "Creditor management",

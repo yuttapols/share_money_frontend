@@ -1,10 +1,11 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 import { DueReport } from '../../core/models/phase-three.model';
 import { Debtor } from '../../core/models/user.model';
+import { AuthService } from '../../core/services/auth.service';
 import { ReportApiService } from '../../core/services/report-api.service';
 import { UserApiService } from '../../core/services/user-api.service';
 import { AppButtonComponent } from '../../shared/components/app-button/app-button.component';
@@ -21,29 +22,34 @@ import { FileDownloadService } from '../../shared/services/file-download.service
         <h1 class="m-0 text-base font-bold text-slate-800 dark:text-slate-100">{{ 'reports.title' | translate }}</h1>
         <p class="mb-0 mt-1 text-sm text-slate-500 dark:text-slate-400">{{ 'reports.description' | translate }}</p>
       </div>
-      <app-button icon="pi-file-pdf" [loading]="downloading()" [disabled]="!report()" (pressed)="downloadPdf()">{{
-        'reports.downloadPdf' | translate
-      }}</app-button>
+      @if (!canFilterByDebtor() || selectedDebtor) {
+        <app-button icon="pi-file-pdf" [loading]="downloading()" [disabled]="!report()" (pressed)="downloadPdf()">{{
+          'reports.downloadPdf' | translate
+        }}</app-button>
+      }
     </header>
 
-    <section
-      class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800"
-    >
-      <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{
-        'reports.debtorFilter' | translate
-      }}</label>
-      <select
-        class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-shadow focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:max-w-sm"
-        maxlength="50"
-        [(ngModel)]="selectedDebtor"
-        (ngModelChange)="load()"
+    @if (canFilterByDebtor()) {
+      <section
+        class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800"
       >
-        <option value="__all">{{ 'reports.allDebtors' | translate }}</option>
-        @for (debtor of debtors(); track debtor.id) {
-          <option [value]="debtor.username">{{ debtor.name }} ({{ debtor.username }})</option>
-        }
-      </select>
-    </section>
+        <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{
+          'reports.debtorFilter' | translate
+        }}</label>
+        <select
+          class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-shadow focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:max-w-sm"
+          maxlength="50"
+          [(ngModel)]="selectedDebtor"
+          (ngModelChange)="load()"
+        >
+          <option value="" disabled>{{ 'reports.selectDebtorPlaceholder' | translate }}</option>
+          <option value="__all">{{ 'reports.allDebtors' | translate }}</option>
+          @for (debtor of debtors(); track debtor.id) {
+            <option [value]="debtor.username">{{ debtor.name }} ({{ debtor.username }})</option>
+          }
+        </select>
+      </section>
+    }
 
     @if (loading()) {
       <section class="mt-5 grid gap-4 sm:grid-cols-3">
@@ -57,6 +63,14 @@ import { FileDownloadService } from '../../shared/services/file-download.service
           [title]="'errors.unexpected' | translate"
           [retryLabel]="'common.retry' | translate"
           (retry)="load()"
+        />
+      </div>
+    } @else if (canFilterByDebtor() && !selectedDebtor) {
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+        <app-empty-state
+          icon="pi-users"
+          [title]="'reports.selectDebtorTitle' | translate"
+          [message]="'reports.selectDebtorDescription' | translate"
         />
       </div>
     } @else {
@@ -166,22 +180,32 @@ import { FileDownloadService } from '../../shared/services/file-download.service
 export class ReportsComponent implements OnInit {
   private readonly api = inject(ReportApiService);
   private readonly userApi = inject(UserApiService);
+  private readonly auth = inject(AuthService);
   private readonly downloads = inject(FileDownloadService);
   readonly debtors = signal<Debtor[]>([]);
   readonly report = signal<DueReport | null>(null);
-  readonly loading = signal(true);
+  readonly loading = signal(false);
   readonly loadError = signal(false);
   readonly downloading = signal(false);
-  selectedDebtor = '__all';
+  readonly canFilterByDebtor = computed(() => this.auth.currentUser()?.role === 'CREDITOR');
+  selectedDebtor = '';
 
   ngOnInit(): void {
-    this.userApi.getDebtors().subscribe({ next: (rows) => this.debtors.set(rows), error: () => this.debtors.set([]) });
+    if (this.canFilterByDebtor()) {
+      this.userApi
+        .getDebtors()
+        .subscribe({ next: (rows) => this.debtors.set(rows), error: () => this.debtors.set([]) });
+      return;
+    }
+    this.selectedDebtor = '__all';
     this.load();
   }
 
   load(): void {
-    this.loading.set(true);
+    this.report.set(null);
     this.loadError.set(false);
+    if (!this.selectedDebtor) return;
+    this.loading.set(true);
     this.api
       .getDueReport(this.selectedDebtor)
       .pipe(finalize(() => this.loading.set(false)))

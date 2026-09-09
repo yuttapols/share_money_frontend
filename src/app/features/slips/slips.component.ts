@@ -1,14 +1,16 @@
 import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
-import { finalize } from 'rxjs';
+import { EMPTY, finalize, map, Observable, of, switchMap } from 'rxjs';
 import { Slip } from '../../core/models/phase-three.model';
 import { Debtor } from '../../core/models/user.model';
 import { AuthService } from '../../core/services/auth.service';
+import { DebtApiService } from '../../core/services/debt-api.service';
 import { SlipApiService } from '../../core/services/slip-api.service';
 import { UserApiService } from '../../core/services/user-api.service';
 import { AppButtonComponent } from '../../shared/components/app-button/app-button.component';
+import { AppDialogComponent } from '../../shared/components/app-dialog/app-dialog.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { FileDownloadService } from '../../shared/services/file-download.service';
@@ -17,7 +19,15 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
 
 @Component({
   selector: 'app-slips',
-  imports: [FormsModule, DatePipe, TranslatePipe, AppButtonComponent, EmptyStateComponent, ErrorStateComponent],
+  imports: [
+    FormsModule,
+    DatePipe,
+    TranslatePipe,
+    AppButtonComponent,
+    AppDialogComponent,
+    EmptyStateComponent,
+    ErrorStateComponent
+  ],
   template: `
     <header>
       <h1>{{ 'slips.title' | translate }}</h1>
@@ -74,7 +84,7 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
         </section>
       }
 
-      @if (slipViews().length === 0) {
+      @if (slips().length === 0) {
         <section class="state-card">
           <app-empty-state
             icon="pi-image"
@@ -84,34 +94,27 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
         </section>
       } @else {
         <section class="slip-grid">
-          @for (item of slipViews(); track item.slip.id) {
+          @for (slip of slips(); track slip.id) {
             <article class="slip-card">
-              <div class="preview">
-                @if (item.previewUrl) {
-                  <img [src]="item.previewUrl" [alt]="'slips.title' | translate" />
-                } @else {
-                  <span class="pi pi-spin pi-spinner"></span>
-                }
-              </div>
+              <button type="button" class="preview" (click)="openPreview(slip)">
+                <img [src]="slip.thumbnailUrl || slip.url" [alt]="slip.filename" />
+              </button>
               <div class="details">
-                <h2>{{ item.slip.filename }}</h2>
-                <p>{{ item.slip.uploadedAt | date: 'd MMM y, HH:mm' }}</p>
-                <p>{{ formatSize(item.slip.sizeBytes) }}</p>
+                <h2>{{ slip.filename }}</h2>
+                <p>{{ slip.uploadedAt | date: 'd MMM y, HH:mm' }}</p>
+                <p>{{ formatSize(slip.sizeBytes) }}</p>
                 <div class="actions">
-                  <app-button
-                    icon="pi-download"
-                    [loading]="downloadingId() === item.slip.id"
-                    (pressed)="download(item.slip)"
-                    >{{ 'slips.download' | translate }}</app-button
-                  >
+                  <app-button icon="pi-download" [loading]="downloadingId() === slip.id" (pressed)="download(slip)">{{
+                    'slips.download' | translate
+                  }}</app-button>
                   @if (canDelete()) {
                     <button
                       type="button"
                       class="delete-button"
-                      [disabled]="deletingId() === item.slip.id"
-                      (click)="deleteSlip(item.slip)"
+                      [disabled]="deletingId() === slip.id"
+                      (click)="deleteSlip(slip)"
                     >
-                      <span [class]="deletingId() === item.slip.id ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span
+                      <span [class]="deletingId() === slip.id ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span
                       >{{ 'common.delete' | translate }}
                     </button>
                   }
@@ -122,6 +125,17 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
         </section>
       }
     }
+
+    <app-dialog
+      [title]="previewSlip()?.filename ?? ''"
+      [visible]="!!previewSlip()"
+      width="min(90vw, 48rem)"
+      (visibleChange)="closePreview()"
+    >
+      @if (previewSlip(); as slip) {
+        <img class="preview-image" [src]="slip.url" [alt]="slip.filename" />
+      }
+    </app-dialog>
   `,
   styles: `
     header h1,
@@ -232,14 +246,23 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
       display: grid;
       place-items: center;
       overflow: hidden;
+      border: 0;
+      padding: 0;
       background: var(--color-surface-muted);
       color: var(--color-text-muted);
       font-size: 1.5rem;
+      cursor: pointer;
     }
     .preview img {
       width: 100%;
       height: 100%;
       max-height: 16rem;
+      object-fit: contain;
+    }
+    .preview-image {
+      display: block;
+      width: 100%;
+      max-height: 75vh;
       object-fit: contain;
     }
     .details {
@@ -286,20 +309,18 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../shared/utils/image-
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class SlipsComponent implements OnInit, OnDestroy {
+export class SlipsComponent implements OnInit {
   private readonly maxFileSize = 1024 * 1024;
   private readonly api = inject(SlipApiService);
   private readonly userApi = inject(UserApiService);
+  private readonly debtApi = inject(DebtApiService);
   private readonly auth = inject(AuthService);
   private readonly downloads = inject(FileDownloadService);
   private readonly alerts = inject(SweetAlertService);
   readonly fileAccept = IMAGE_FILE_ACCEPT;
   readonly debtors = signal<Debtor[]>([]);
   readonly slips = signal<Slip[]>([]);
-  readonly previewUrls = signal<Record<number, string>>({});
-  readonly slipViews = computed(() =>
-    this.slips().map((slip) => ({ slip, previewUrl: slip.id ? (this.previewUrls()[slip.id] ?? '') : '' }))
-  );
+  readonly previewSlip = signal<Slip | null>(null);
   readonly selectedFile = signal<File | null>(null);
   readonly fileError = signal('');
   readonly loading = signal(false);
@@ -324,27 +345,35 @@ export class SlipsComponent implements OnInit, OnDestroy {
     if (this.canSelectDebtor() && !this.selectedDebtor) return;
     this.loading.set(true);
     this.loadError.set(false);
-    this.clearPreviews();
     const debtorUsername = this.canUpload() ? this.auth.currentUser()?.username : this.selectedDebtor;
-    const creditorUsername = this.resolveCreditorUsername();
-    this.api
-      .getAll(debtorUsername, creditorUsername)
-      .pipe(finalize(() => this.loading.set(false)))
+    this.resolveCreditorUsername()
+      .pipe(
+        switchMap((creditorUsername) => this.api.getAll(debtorUsername, creditorUsername)),
+        finalize(() => this.loading.set(false))
+      )
       .subscribe({
-        next: (slips) => {
-          this.slips.set(slips);
-          for (const slip of slips) if (slip.id) this.loadPreview(slip.id);
-        },
+        next: (slips) => this.slips.set(slips),
         error: () => this.loadError.set(true)
       });
   }
 
-  private resolveCreditorUsername(): string {
+  openPreview(slip: Slip): void {
+    this.previewSlip.set(slip);
+  }
+
+  closePreview(): void {
+    this.previewSlip.set(null);
+  }
+
+  private resolveCreditorUsername(): Observable<string> {
     const user = this.auth.currentUser();
-    if (!user) return '';
-    if (user.role === 'CREDITOR') return user.username;
-    if (user.role === 'DEBTOR') return user.creditorUsername ?? '';
-    return '';
+    if (!user) return of('');
+    if (user.role === 'CREDITOR') return of(user.username);
+    if (user.role === 'DEBTOR') {
+      if (user.creditorUsername) return of(user.creditorUsername);
+      return this.debtApi.getAll().pipe(map((rows) => rows[0]?.creditorUsername ?? ''));
+    }
+    return of('');
   }
 
   selectFile(event: Event): void {
@@ -367,15 +396,19 @@ export class SlipsComponent implements OnInit, OnDestroy {
 
   upload(): void {
     const file = this.selectedFile();
-    const creditorUsername = this.auth.currentUser()?.creditorUsername;
-    if (!file || !creditorUsername || this.uploading()) {
-      if (!creditorUsername) this.fileError.set('slips.creditorMissing');
-      return;
-    }
+    if (!file || this.uploading()) return;
     this.uploading.set(true);
-    this.api
-      .upload(creditorUsername, file)
-      .pipe(finalize(() => this.uploading.set(false)))
+    this.resolveCreditorUsername()
+      .pipe(
+        switchMap((creditorUsername) => {
+          if (!creditorUsername) {
+            this.fileError.set('slips.creditorMissing');
+            return EMPTY;
+          }
+          return this.api.upload(creditorUsername, file);
+        }),
+        finalize(() => this.uploading.set(false))
+      )
       .subscribe(() => {
         this.selectedFile.set(null);
         this.alerts.success('toast.slipUploaded');
@@ -413,20 +446,5 @@ export class SlipsComponent implements OnInit, OnDestroy {
 
   formatSize(size: number): string {
     return `${(size / 1024).toFixed(1)} KB`;
-  }
-
-  ngOnDestroy(): void {
-    this.clearPreviews();
-  }
-
-  private loadPreview(id: number): void {
-    this.api.getThumbnail(id).subscribe((blob) => {
-      this.previewUrls.update((urls) => ({ ...urls, [id]: URL.createObjectURL(blob) }));
-    });
-  }
-
-  private clearPreviews(): void {
-    for (const url of Object.values(this.previewUrls())) URL.revokeObjectURL(url);
-    this.previewUrls.set({});
   }
 }

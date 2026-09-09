@@ -117,7 +117,11 @@
     "tableRole": "บทบาท",
     "tableAction": "การกระทำ",
     "actionLogin": "เข้าสู่ระบบ",
-    "actionLogout": "ออกจากระบบ"
+    "actionLogout": "ออกจากระบบ",
+    "myDueAmountTitle": "ยอดที่ต้องชำระ",
+    "myDueAmountEmpty": "ไม่มียอดที่ต้องชำระ",
+    "myCreditorCountTitle": "จำนวนเจ้าหนี้",
+    "myCreditorCountEmpty": "ยังไม่มีเจ้าหนี้"
   },
   "profile": {
     "account": "บัญชีของฉัน",
@@ -255,6 +259,7 @@
     "description": "ตรวจสอบยอดที่ต้องชำระและดาวน์โหลดรายงาน PDF",
     "downloadPdf": "ดาวน์โหลด PDF",
     "debtorFilter": "กรองตามลูกหนี้",
+    "selectDebtorPlaceholder": "-- เลือกลูกหนี้ --",
     "allDebtors": "ลูกหนี้ทั้งหมด",
     "issuedAt": "วันที่ออกรายงาน",
     "dueCount": "รายการที่ต้องชำระ",
@@ -266,7 +271,9 @@
     "paid": "ชำระแล้ว",
     "pending": "รอชำระ",
     "empty": "ไม่มีรายการที่ต้องชำระ",
-    "emptyDescription": "ไม่พบยอดค้างชำระในตัวกรองที่เลือก"
+    "emptyDescription": "ไม่พบยอดค้างชำระในตัวกรองที่เลือก",
+    "selectDebtorTitle": "กรุณาเลือกลูกหนี้",
+    "selectDebtorDescription": "เลือกลูกหนี้จากตัวกรองด้านบนเพื่อแสดงรายงานยอดชำระ"
   },
   "bank": {
     "title": "บัญชีสำหรับรับชำระ",
@@ -283,7 +290,10 @@
     "emptyReadonlyDescription": "เจ้าหนี้ของคุณยังไม่ได้เพิ่มบัญชีสำหรับรับชำระ",
     "chooseBank": "เลือกธนาคาร",
     "deleteTitle": "ลบบัญชีนี้?",
-    "deleteDescription": "บัญชีสำหรับรับชำระนี้จะถูกลบออกอย่างถาวร"
+    "deleteDescription": "บัญชีสำหรับรับชำระนี้จะถูกลบออกอย่างถาวร",
+    "copy": "คัดลอก",
+    "copied": "คัดลอกเลขบัญชีแล้ว",
+    "paymentDeadlineNotice": "** สามารถชำระได้ไม่เกิน วันที่ 1 ของทุกเดือน"
   },
   "admin": {
     "creditorsTitle": "จัดการเจ้าหนี้",

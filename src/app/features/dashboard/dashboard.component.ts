@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
@@ -8,15 +8,27 @@ import { AuthService } from '../../core/services/auth.service';
 import { BankAccountApiService } from '../../core/services/bank-account-api.service';
 import { DebtApiService } from '../../core/services/debt-api.service';
 import { DocumentApiService } from '../../core/services/document-api.service';
+import { ReportApiService } from '../../core/services/report-api.service';
 import { UserApiService } from '../../core/services/user-api.service';
 import { DebtSummary } from '../../core/models/debt.model';
 import { LoginLog } from '../../core/models/login-log.model';
-import { BankAccount, DocumentItem } from '../../core/models/phase-three.model';
+import { BankAccount, DocumentItem, DueReport } from '../../core/models/phase-three.model';
 import { CreditorSummary, Debtor } from '../../core/models/user.model';
 import { AppCardComponent, CardAccent } from '../../shared/components/app-card/app-card.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.component';
+import { SweetAlertService } from '../../shared/services/sweet-alert.service';
+
+interface DashboardOverviewCard {
+  titleKey: string;
+  emptyKey: string;
+  count: number;
+  loading: boolean;
+  icon: string;
+  gradient: string;
+  currency?: boolean;
+}
 
 @Component({
   selector: 'app-dashboard',
@@ -24,13 +36,63 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
     RouterLink,
     TranslatePipe,
     DatePipe,
+    DecimalPipe,
     AppCardComponent,
     EmptyStateComponent,
     ErrorStateComponent,
     SkeletonComponent
   ],
   template: `
-    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    @if (isDebtor()) {
+      <section
+        class="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+      >
+        <header class="flex items-center gap-2 pb-3">
+          <i class="pi pi-building text-rose-500"></i>
+          <h2 class="m-0 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ 'bank.title' | translate }}</h2>
+        </header>
+        @if (loadingBankAccounts()) {
+          <div class="rounded-2xl border border-rose-100 bg-rose-50 p-5 dark:border-rose-500/20 dark:bg-rose-500/10">
+            <app-skeleton width="60%" height="2.5rem" />
+          </div>
+        } @else if (bankAccounts().length === 0) {
+          <app-empty-state
+            icon="pi-wallet"
+            [title]="'bank.empty' | translate"
+            [message]="'bank.emptyDescription' | translate"
+          />
+        } @else {
+          <div class="grid gap-3">
+            @for (account of bankAccounts(); track account.id) {
+              <div
+                class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-rose-100 bg-rose-50 p-5 dark:border-rose-500/20 dark:bg-rose-500/10"
+              >
+                <div class="flex flex-wrap items-center gap-3">
+                  <strong class="text-3xl font-extrabold tracking-wide text-rose-600 dark:text-rose-400">{{
+                    account.accountNo
+                  }}</strong>
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-rose-600 shadow-sm transition-colors hover:bg-white dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/25"
+                    (click)="copyAccountNo(account.accountNo)"
+                  >
+                    <i class="pi pi-copy"></i>{{ 'bank.copy' | translate }}
+                  </button>
+                </div>
+                <p class="m-0 w-full text-sm font-semibold text-rose-500 dark:text-rose-300">
+                  {{ account.bankName }} · {{ account.accountName }}
+                </p>
+                <p class="payment-note m-0 w-full text-sm font-extrabold text-red-600 dark:text-red-500">
+                  {{ 'bank.paymentDeadlineNotice' | translate }}
+                </p>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+
+    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2" [class.mt-4]="isDebtor()">
       @for (card of overviewCards(); track card.titleKey) {
         <div
           [class]="'relative overflow-hidden rounded-3xl bg-gradient-to-br p-6 text-white shadow-lg ' + card.gradient"
@@ -51,7 +113,13 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
             @if (card.loading) {
               <span class="mt-1 block h-10 w-20 animate-pulse rounded-md bg-white/25"></span>
             } @else {
-              <strong class="block text-5xl font-extrabold">{{ card.count }}</strong>
+              <strong class="block text-5xl font-extrabold">
+                @if (card.currency) {
+                  &#3647;{{ card.count | number: '1.2-2' }}
+                } @else {
+                  {{ card.count | number }}
+                }
+              </strong>
               @if (card.count === 0) {
                 <small class="text-sm text-white/70">{{ card.emptyKey | translate }}</small>
               }
@@ -268,6 +336,62 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
                   </div>
                 }
               }
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (isDebtor()) {
+      <section class="mt-4 grid grid-cols-1 gap-4">
+        <div
+          class="flex h-full flex-col overflow-hidden rounded-3xl border border-t-4 border-slate-300 border-t-violet-300 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800"
+        >
+          <header class="flex items-center justify-between p-5 pb-3">
+            <h2 class="m-0 text-sm font-semibold text-slate-800 dark:text-slate-100">
+              {{ 'documents.title' | translate }}
+            </h2>
+            <a
+              routerLink="/documents"
+              class="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
+            >
+              {{ 'common.viewAll' | translate }}<i class="pi pi-arrow-right text-[0.65rem]"></i>
+            </a>
+          </header>
+          @if (!loadingDocuments() && documents().length === 0) {
+            <app-empty-state
+              icon="pi-file"
+              [title]="'documents.empty' | translate"
+              [message]="'documents.emptyDescription' | translate"
+            />
+          } @else {
+            <div class="overflow-x-auto">
+              <table class="w-full min-w-[20rem] border-collapse text-left text-sm">
+                <thead>
+                  <tr class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
+                    <th class="px-5 py-2">{{ 'documents.documentTitle' | translate }}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (loadingDocuments()) {
+                    @for (row of skeletonRows; track row) {
+                      <tr class="border-t border-slate-100 dark:border-slate-700">
+                        <td class="px-5 py-3"><app-skeleton width="60%" height="0.9rem" /></td>
+                      </tr>
+                    }
+                  } @else {
+                    @for (document of recentDocuments(); track document.id) {
+                      <tr class="border-t border-slate-100 dark:border-slate-700">
+                        <td class="px-5 py-3 text-slate-700 dark:text-slate-200">
+                          <span class="flex items-center gap-2.5">
+                            <i class="pi pi-file-pdf text-xs text-violet-600"></i>{{ document.title }}
+                          </span>
+                        </td>
+                      </tr>
+                    }
+                  }
+                </tbody>
+              </table>
             </div>
           }
         </div>
@@ -534,6 +658,16 @@ import { SkeletonComponent } from '../../shared/components/skeleton/skeleton.com
       }
     </section>
   `,
+  styles: `
+    .payment-note {
+      animation: payment-note-blink 1s step-start infinite;
+    }
+    @keyframes payment-note-blink {
+      50% {
+        opacity: 0.25;
+      }
+    }
+  `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DashboardComponent implements OnInit {
@@ -542,6 +676,8 @@ export class DashboardComponent implements OnInit {
   private readonly debtApi = inject(DebtApiService);
   private readonly bankAccountApi = inject(BankAccountApiService);
   private readonly documentApi = inject(DocumentApiService);
+  private readonly reportApi = inject(ReportApiService);
+  private readonly alerts = inject(SweetAlertService);
   private readonly auth = inject(AuthService);
   protected readonly router = inject(Router);
   private readonly pageSize = 5;
@@ -569,6 +705,7 @@ export class DashboardComponent implements OnInit {
   readonly skeletonRows = [1, 2, 3];
   readonly isAdmin = computed(() => this.auth.currentUser()?.role === 'ADMIN');
   readonly isCreditor = computed(() => this.auth.currentUser()?.role === 'CREDITOR');
+  readonly isDebtor = computed(() => this.auth.currentUser()?.role === 'DEBTOR');
 
   readonly debtors = signal<Debtor[]>([]);
   readonly loadingDebtors = signal(true);
@@ -590,6 +727,9 @@ export class DashboardComponent implements OnInit {
       )
   );
   readonly owingDebtorCount = computed(() => this.owingDebtorUsernames().size);
+
+  readonly dueReport = signal<DueReport | null>(null);
+  readonly loadingDueReport = signal(true);
 
   readonly bankAccounts = signal<BankAccount[]>([]);
   readonly loadingBankAccounts = signal(true);
@@ -626,7 +766,8 @@ export class DashboardComponent implements OnInit {
     () => this.debtors().filter((debtor) => debtor.active).length + this.creditors().filter((c) => c.active).length
   );
   readonly loadingUsers = computed(() => this.loadingDebtors() || this.loadingCreditors());
-  readonly overviewCards = computed(() => {
+  readonly creditorCount = computed(() => new Set(this.debts().map((debt) => debt.creditorUsername)).size);
+  readonly overviewCards = computed<DashboardOverviewCard[]>(() => {
     if (this.isCreditor()) {
       return [
         {
@@ -647,24 +788,48 @@ export class DashboardComponent implements OnInit {
         }
       ];
     }
-    return [
-      {
-        titleKey: 'dashboard.activeUsersTitle',
-        emptyKey: 'dashboard.activeUsersEmpty',
-        count: this.activeUsers(),
-        loading: this.loadingUsers(),
-        icon: 'pi-check-circle',
-        gradient: 'from-emerald-500 via-emerald-600 to-teal-700'
-      },
-      {
-        titleKey: 'dashboard.totalUsersTitle',
-        emptyKey: 'dashboard.totalUsersEmpty',
-        count: this.totalUsers(),
-        loading: this.loadingUsers(),
-        icon: 'pi-users',
-        gradient: 'from-blue-500 via-indigo-600 to-violet-700'
-      }
-    ];
+    if (this.isAdmin()) {
+      return [
+        {
+          titleKey: 'dashboard.activeUsersTitle',
+          emptyKey: 'dashboard.activeUsersEmpty',
+          count: this.activeUsers(),
+          loading: this.loadingUsers(),
+          icon: 'pi-check-circle',
+          gradient: 'from-emerald-500 via-emerald-600 to-teal-700'
+        },
+        {
+          titleKey: 'dashboard.totalUsersTitle',
+          emptyKey: 'dashboard.totalUsersEmpty',
+          count: this.totalUsers(),
+          loading: this.loadingUsers(),
+          icon: 'pi-users',
+          gradient: 'from-blue-500 via-indigo-600 to-violet-700'
+        }
+      ];
+    }
+    if (this.isDebtor()) {
+      return [
+        {
+          titleKey: 'dashboard.myDueAmountTitle',
+          emptyKey: 'dashboard.myDueAmountEmpty',
+          count: this.dueReport()?.total ?? 0,
+          loading: this.loadingDueReport(),
+          icon: 'pi-wallet',
+          gradient: 'from-amber-500 via-orange-600 to-red-600',
+          currency: true
+        },
+        {
+          titleKey: 'dashboard.myCreditorCountTitle',
+          emptyKey: 'dashboard.myCreditorCountEmpty',
+          count: this.creditorCount(),
+          loading: this.loadingDebts(),
+          icon: 'pi-building',
+          gradient: 'from-blue-500 via-indigo-600 to-violet-700'
+        }
+      ];
+    }
+    return [];
   });
   readonly quickActions: { titleKey: string; descKey: string; icon: string; route: string; accent: CardAccent }[] = [
     {
@@ -691,16 +856,32 @@ export class DashboardComponent implements OnInit {
   ];
 
   ngOnInit(): void {
-    this.loadDebtors();
+    if (this.isAdmin() || this.isCreditor()) {
+      this.loadDebtors();
+    }
     if (this.isAdmin()) {
       this.loadCreditors();
       this.loadLoginHistory();
     }
-    if (this.isCreditor()) {
+    if (this.isCreditor() || this.isDebtor()) {
       this.loadDebts();
       this.loadBankAccounts();
       this.loadDocuments();
     }
+    if (this.isDebtor()) {
+      this.loadDueReport();
+    }
+  }
+
+  loadDueReport(): void {
+    this.loadingDueReport.set(true);
+    this.reportApi
+      .getDueReport()
+      .pipe(finalize(() => this.loadingDueReport.set(false)))
+      .subscribe({
+        next: (report) => this.dueReport.set(report),
+        error: () => this.dueReport.set(null)
+      });
   }
 
   loadBankAccounts(): void {
@@ -712,6 +893,10 @@ export class DashboardComponent implements OnInit {
         next: (rows) => this.bankAccounts.set(rows),
         error: () => this.bankAccounts.set([])
       });
+  }
+
+  copyAccountNo(accountNo: string): void {
+    void navigator.clipboard.writeText(accountNo).then(() => this.alerts.success('bank.copied'));
   }
 
   loadDocuments(): void {

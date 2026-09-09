@@ -51,7 +51,7 @@ export const routes: Routes = [
       {
         path: 'documents',
         canActivate: [roleGuard],
-        data: { titleKey: 'menu.documents', roles: ['ADMIN', 'CREDITOR'] },
+        data: { titleKey: 'menu.documents', roles: ['ADMIN', 'CREDITOR', 'DEBTOR'] },
         loadComponent: () => import('./features/documents/documents.component').then((m) => m.DocumentsComponent)
       },
       {

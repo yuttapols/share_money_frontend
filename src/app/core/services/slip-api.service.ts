@@ -31,11 +31,6 @@ export class SlipApiService {
     return this.http.get(`${environment.apiUrl}/slips/${id}/file`, { responseType: 'blob' });
   }
 
-  getThumbnail(id: number, width = 1200): Observable<Blob> {
-    const params = new HttpParams().set('w', Math.min(Math.max(width, 120), 1600));
-    return this.http.get(`${environment.apiUrl}/slips/${id}/thumbnail`, { params, responseType: 'blob' });
-  }
-
   getSubmittedDebtors(): Observable<string[]> {
     return this.http
       .get<ApiResponse<SlipDebtorsResponse>>(`${environment.apiUrl}/slips/debtors`)
