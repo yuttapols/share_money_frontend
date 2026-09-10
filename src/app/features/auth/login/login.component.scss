@@ -3,6 +3,7 @@
 }
 .login-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   grid-template-columns: minmax(22rem, 1.05fr) minmax(28rem, 0.95fr);
   background: var(--color-surface);
@@ -241,6 +242,7 @@
   }
   .login-panel {
     min-height: 100vh;
+    min-height: 100dvh;
     padding: 1.5rem;
   }
   .mobile-logo {
