@@ -99,6 +99,12 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
       },
+      {
+        path: 'admin/import',
+        canActivate: [roleGuard],
+        data: { titleKey: 'menu.admin.import', roles: ['ADMIN'] },
+        loadComponent: () => import('./features/admin/import/import.component').then((m) => m.ImportComponent)
+      },
       { path: 'admin/creditors', redirectTo: 'creditors', pathMatch: 'full' },
       {
         path: 'error/:code',

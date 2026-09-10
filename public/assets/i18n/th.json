@@ -70,6 +70,7 @@
     "reports": "รายงาน",
     "admin": "จัดการระบบ",
     "admin.menus": "จัดการเมนู",
+    "admin.import": "นำเข้าข้อมูล",
     "admin.installments": "ตั้งค่าจำนวนงวด",
     "admin.logs": "ประวัติเข้าสู่ระบบ",
     "admin.creditors": "จัดการเจ้าหนี้",
@@ -327,6 +328,14 @@
     "downloadErrors": "ดาวน์โหลดรายการผิดพลาด",
     "migrationCompleted": "นำเข้าข้อมูลสำเร็จ"
   },
+  "import": {
+    "title": "นำเข้าข้อมูล",
+    "description": "อัปโหลดไฟล์ Excel เพื่อตรวจสอบและนำเข้าข้อมูลเข้าสู่ระบบ",
+    "validate": "ตรวจสอบข้อมูล",
+    "commit": "ยืนยันนำเข้าข้อมูล",
+    "completed": "นำเข้าข้อมูลสำเร็จ",
+    "importedCount": "นำเข้าข้อมูลสำเร็จ {{count}} รายการ"
+  },
   "errorPage": {
     "breadcrumbLabel": "ข้อผิดพลาด",
     "eyebrow": "หลงทางกลางอวกาศ",
@@ -369,7 +378,9 @@
     "menuUpdated": "บันทึกข้อมูลเมนูเรียบร้อยแล้ว",
     "menuDeleted": "ลบเมนูเรียบร้อยแล้ว",
     "migrationValidated": "ตรวจสอบไฟล์นำเข้าเรียบร้อยแล้ว",
-    "migrationCommitted": "นำเข้าข้อมูลเรียบร้อยแล้ว"
+    "migrationCommitted": "นำเข้าข้อมูลเรียบร้อยแล้ว",
+    "importValidated": "ตรวจสอบไฟล์นำเข้าเรียบร้อยแล้ว",
+    "importCommitted": "นำเข้าข้อมูลเรียบร้อยแล้ว"
   },
   "errors": {
     "ERR_INVALID_CREDENTIALS": "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",

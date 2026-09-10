@@ -81,7 +81,8 @@ export const mockApiInterceptor: HttpInterceptorFn = (request, next) => {
         route: null,
         sortOrder: 9,
         children: [
-          { id: 7, menuKey: 'menu.admin.menus', icon: 'pi-list', route: '/admin/menus', sortOrder: 0, children: [] }
+          { id: 7, menuKey: 'menu.admin.menus', icon: 'pi-list', route: '/admin/menus', sortOrder: 0, children: [] },
+          { id: 8, menuKey: 'menu.admin.import', icon: 'pi-upload', route: '/admin/import', sortOrder: 1, children: [] }
         ]
       });
     return success(menus, 450);

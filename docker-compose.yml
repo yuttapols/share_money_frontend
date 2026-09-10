@@ -1,0 +1,11 @@
+services:
+  share-money-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: share-money-frontend:latest
+    ports:
+      - "8081:80"
+    environment:
+      BACKEND_URL: http://backend:8080
+    restart: unless-stopped

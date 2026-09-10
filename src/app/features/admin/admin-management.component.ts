@@ -17,6 +17,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state/empty-s
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { FileDownloadService } from '../../shared/services/file-download.service';
 import { SweetAlertService } from '../../shared/services/sweet-alert.service';
+import { EXCEL_FILE_ACCEPT, isAllowedExcelFile } from '../../shared/utils/excel-file.util';
 import { menuKeyValidators, passwordValidators, usernameValidators } from '../../shared/utils/validators.util';
 
 type AdminMode = 'creditors' | 'installments' | 'logs' | 'menus' | 'migrations';
@@ -198,12 +199,11 @@ type AdminMode = 'creditors' | 'installments' | 'logs' | 'menus' | 'migrations';
       </section>
     } @else if (mode() === 'migrations') {
       <section class="card migration">
-        <input
-          #migrationInput
-          type="file"
-          accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          (change)="selectMigrationFile($event)"
-        /><button type="button" class="file-picker" (click)="migrationInput.click()">
+        <input #migrationInput type="file" [accept]="excelAccept" (change)="selectMigrationFile($event)" /><button
+          type="button"
+          class="file-picker"
+          (click)="migrationInput.click()"
+        >
           <i class="pi pi-file-excel"></i>{{ migrationFile()?.name || ('admin.chooseExcel' | translate) }}
           <b>*</b></button
         ><small>{{ 'admin.excelHint' | translate }}</small
@@ -685,6 +685,7 @@ export class AdminManagementComponent implements OnInit {
   private readonly alerts = inject(SweetAlertService);
   private readonly downloads = inject(FileDownloadService);
   readonly allRoles: UserRole[] = ['ADMIN', 'CREDITOR', 'DEBTOR'];
+  readonly excelAccept = EXCEL_FILE_ACCEPT;
   readonly mode = signal<AdminMode>('creditors');
   readonly loading = signal(true);
   readonly loadError = signal(false);
@@ -880,7 +881,7 @@ export class AdminManagementComponent implements OnInit {
     const input = event.target as HTMLInputElement;
     const file = input.files?.[0] ?? null;
     input.value = '';
-    this.migrationFile.set(file?.name.toLowerCase().endsWith('.xlsx') ? file : null);
+    this.migrationFile.set(file && isAllowedExcelFile(file) ? file : null);
     this.migrationResult.set(null);
     this.commitResult.set(null);
     if (file && !this.migrationFile()) this.alerts.error('validation.excelType');

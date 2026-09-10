@@ -70,6 +70,7 @@
     "reports": "Reports",
     "admin": "Administration",
     "admin.menus": "Menu management",
+    "admin.import": "Import data",
     "admin.installments": "Installment settings",
     "admin.logs": "Login history",
     "admin.creditors": "Creditor management",
@@ -327,6 +328,14 @@
     "downloadErrors": "Download errors",
     "migrationCompleted": "Import completed"
   },
+  "import": {
+    "title": "Import data",
+    "description": "Upload an Excel file to validate and import data into the system",
+    "validate": "Validate data",
+    "commit": "Confirm import",
+    "completed": "Import completed",
+    "importedCount": "{{count}} records imported successfully"
+  },
   "errorPage": {
     "breadcrumbLabel": "Error",
     "eyebrow": "Lost in space",
@@ -369,7 +378,9 @@
     "menuUpdated": "Menu saved successfully",
     "menuDeleted": "Menu deleted successfully",
     "migrationValidated": "Import file validated",
-    "migrationCommitted": "Data imported successfully"
+    "migrationCommitted": "Data imported successfully",
+    "importValidated": "Import file validated",
+    "importCommitted": "Data imported successfully"
   },
   "errors": {
     "ERR_INVALID_CREDENTIALS": "Incorrect username or password",
