@@ -1,1 +1,2 @@
+/v1/api/*    https://share-money-backend-1ezn.onrender.com/v1/api/:splat    200
 /*    /index.html   200
