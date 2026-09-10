@@ -131,7 +131,7 @@ export class LoginComponent {
 
   scrollFieldIntoView(event: FocusEvent): void {
     const target = event.target as HTMLElement;
-    setTimeout(() => target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
+    setTimeout(() => target.scrollIntoView({ block: 'start', behavior: 'smooth' }), 300);
   }
 
   sanitizeUsername(event: Event): void {
