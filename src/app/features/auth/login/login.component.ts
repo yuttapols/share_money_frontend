@@ -34,7 +34,7 @@ import { passwordValidators, resolveValidationError, usernameValidators } from '
           </div>
         </div>
       </section>
-      <section class="login-panel">
+      <section class="login-panel" [class.login-panel--editing]="fieldFocused()">
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
           <img
             class="mobile-logo"
@@ -57,6 +57,7 @@ import { passwordValidators, resolveValidationError, usernameValidators } from '
               autocomplete="username"
               (input)="sanitizeUsername($event)"
               (focus)="scrollFieldIntoView($event)"
+              (blur)="fieldFocused.set(false)"
               [attr.aria-invalid]="showError('username')"
               [placeholder]="'auth.usernamePlaceholder' | translate"
             />
@@ -76,6 +77,7 @@ import { passwordValidators, resolveValidationError, usernameValidators } from '
               maxlength="100"
               autocomplete="current-password"
               (focus)="scrollFieldIntoView($event)"
+              (blur)="fieldFocused.set(false)"
               [attr.aria-invalid]="showError('password')"
               [placeholder]="'auth.passwordPlaceholder' | translate"
             /><button type="button" (click)="togglePassword()" [attr.aria-label]="'auth.togglePassword' | translate">
@@ -110,6 +112,7 @@ export class LoginComponent {
   private readonly sweetAlert = inject(SweetAlertService);
   readonly submitting = signal(false);
   readonly showPassword = signal(false);
+  readonly fieldFocused = signal(false);
   readonly rememberUsername = signal(Boolean(localStorage.getItem(this.rememberedUsernameKey)));
   readonly form = this.fb.nonNullable.group({
     username: [localStorage.getItem(this.rememberedUsernameKey) ?? '', usernameValidators()],
@@ -130,6 +133,7 @@ export class LoginComponent {
   }
 
   scrollFieldIntoView(event: FocusEvent): void {
+    this.fieldFocused.set(true);
     const target = event.target as HTMLElement;
     setTimeout(() => target.scrollIntoView({ block: 'start', behavior: 'smooth' }), 300);
   }
