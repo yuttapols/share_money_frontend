@@ -56,6 +56,7 @@ import { passwordValidators, resolveValidationError, usernameValidators } from '
               maxlength="50"
               autocomplete="username"
               (input)="sanitizeUsername($event)"
+              (focus)="scrollFieldIntoView($event)"
               [attr.aria-invalid]="showError('username')"
               [placeholder]="'auth.usernamePlaceholder' | translate"
             />
@@ -74,6 +75,7 @@ import { passwordValidators, resolveValidationError, usernameValidators } from '
               formControlName="password"
               maxlength="100"
               autocomplete="current-password"
+              (focus)="scrollFieldIntoView($event)"
               [attr.aria-invalid]="showError('password')"
               [placeholder]="'auth.passwordPlaceholder' | translate"
             /><button type="button" (click)="togglePassword()" [attr.aria-label]="'auth.togglePassword' | translate">
@@ -125,6 +127,11 @@ export class LoginComponent {
   }
   togglePassword(): void {
     this.showPassword.update((value) => !value);
+  }
+
+  scrollFieldIntoView(event: FocusEvent): void {
+    const target = event.target as HTMLElement;
+    setTimeout(() => target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 300);
   }
 
   sanitizeUsername(event: Event): void {
