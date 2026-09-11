@@ -96,61 +96,108 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
         />
       </div>
     } @else {
-      <section class="mt-5 grid gap-4 lg:grid-cols-2">
-        @for (debt of debts(); track debt.id) {
-          <article
-            class="debt-card"
-            [class.dragging]="draggedId() === debt.id"
-            [attr.draggable]="canManage()"
-            (dragstart)="dragStart(debt.id)"
-            (dragover)="dragOver($event)"
-            (drop)="dropOn(debt.id)"
-            (dragend)="draggedId.set(null)"
-          >
-            <div class="flex items-start gap-3">
-              @if (canManage()) {
-                <span class="pi pi-bars drag-handle"></span>
+      <section
+        class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
+      >
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[54rem] border-collapse text-left">
+            <thead>
+              <tr
+                class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/50 dark:text-slate-400"
+              >
+                @if (canManage()) {
+                  <th class="w-10 px-3 py-3"></th>
+                }
+                <th class="px-5 py-3 font-semibold">{{ 'debts.debtTitle' | translate }}</th>
+                <th class="px-5 py-3 font-semibold">{{ 'debts.debtor' | translate }}</th>
+                <th class="px-5 py-3 font-semibold">{{ 'debts.method' | translate }}</th>
+                <th class="px-5 py-3 font-semibold">{{ 'debts.status' | translate }}</th>
+                <th class="px-5 py-3 text-right font-semibold">{{ 'debts.totalAmount' | translate }}</th>
+                <th class="px-5 py-3 text-right font-semibold">{{ 'debts.paidAmount' | translate }}</th>
+                <th class="px-5 py-3 text-right font-semibold">{{ 'debts.dueAmount' | translate }}</th>
+                <th class="px-5 py-3 text-right font-semibold">{{ 'debts.actions' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (debt of pagedDebts(); track debt.id) {
+                <tr
+                  class="border-t border-slate-100 hover:bg-slate-50/70 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                  [class.dragging]="draggedId() === debt.id"
+                  [attr.draggable]="canManage()"
+                  (dragstart)="dragStart(debt.id)"
+                  (dragover)="dragOver($event)"
+                  (drop)="dropOn(debt.id)"
+                  (dragend)="draggedId.set(null)"
+                >
+                  @if (canManage()) {
+                    <td class="px-3 py-3"><span class="pi pi-bars drag-handle"></span></td>
+                  }
+                  <td class="px-5 py-3">
+                    <strong class="text-sm text-slate-800 dark:text-slate-100">{{ debt.title }}</strong>
+                  </td>
+                  <td class="px-5 py-3 text-sm text-slate-600 dark:text-slate-300">{{ debt.debtorUsername }}</td>
+                  <td class="px-5 py-3">
+                    <span [class]="'method ' + debt.method.toLowerCase()">{{
+                      'debtMethod.' + debt.method | translate
+                    }}</span>
+                  </td>
+                  <td class="px-5 py-3">
+                    <span [class]="'status ' + debt.status.toLowerCase()">{{
+                      'debtStatus.' + debt.status | translate
+                    }}</span>
+                  </td>
+                  <td class="px-5 py-3 text-right text-sm text-slate-600 dark:text-slate-300">
+                    ฿{{ debt.amount | number: '1.2-2' }}
+                  </td>
+                  <td class="px-5 py-3 text-right text-sm text-slate-600 dark:text-slate-300">
+                    ฿{{ debt.paidAmount | number: '1.2-2' }}
+                  </td>
+                  <td class="px-5 py-3 text-right text-sm font-semibold text-red-600">
+                    ฿{{ debt.dueAmount | number: '1.2-2' }}
+                  </td>
+                  <td class="px-5 py-3">
+                    <div class="flex items-center justify-end gap-1">
+                      <a
+                        class="view-link"
+                        [routerLink]="['/debts', debt.id]"
+                        [queryParams]="{ debtor: debtorFilter() || null }"
+                        >{{ 'common.viewDetails' | translate }}</a
+                      >
+                      @if (canManage()) {
+                        <button
+                          type="button"
+                          class="icon-action delete"
+                          [disabled]="deletingId() === debt.id"
+                          (click)="deleteDebt(debt)"
+                        >
+                          <span [class]="deletingId() === debt.id ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
               }
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
-                  <h2>{{ debt.title }}</h2>
-                  <span [class]="'method ' + debt.method.toLowerCase()">{{
-                    'debtMethod.' + debt.method | translate
-                  }}</span>
-                  <span [class]="'status ' + debt.status.toLowerCase()">{{
-                    'debtStatus.' + debt.status | translate
-                  }}</span>
-                </div>
-                <p>{{ debt.debtorUsername }}</p>
-              </div>
-              @if (canManage()) {
-                <button type="button" class="delete" [disabled]="deletingId() === debt.id" (click)="deleteDebt(debt)">
-                  <span [class]="deletingId() === debt.id ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span>
-                </button>
-              }
-            </div>
-            <div class="amount-grid">
-              <div>
-                <span>{{ 'debts.totalAmount' | translate }}</span
-                ><strong>฿{{ debt.amount | number: '1.2-2' }}</strong>
-              </div>
-              <div>
-                <span>{{ 'debts.paidAmount' | translate }}</span
-                ><strong>฿{{ debt.paidAmount | number: '1.2-2' }}</strong>
-              </div>
-              <div>
-                <span>{{ 'debts.dueAmount' | translate }}</span
-                ><strong class="due">฿{{ debt.dueAmount | number: '1.2-2' }}</strong>
-              </div>
-            </div>
-            <footer>
-              <span>{{ debt.dueLabel }}</span
-              ><a [routerLink]="['/debts', debt.id]" [queryParams]="{ debtor: debtorFilter() || null }"
-                >{{ 'common.viewDetails' | translate }} <i class="pi pi-arrow-right"></i
-              ></a>
-            </footer>
-          </article>
-        }
+            </tbody>
+          </table>
+        </div>
+        <footer class="flex items-center justify-between border-t border-slate-100 px-5 py-3 dark:border-slate-700">
+          <span class="text-xs text-slate-500 dark:text-slate-400">
+            {{ 'common.pageOf' | translate: { current: page(), total: totalPages() } }}
+          </span>
+          <div class="flex gap-1">
+            <button type="button" class="page-button" [disabled]="page() === 1" (click)="setPage(page() - 1)">
+              <span class="pi pi-angle-left"></span>
+            </button>
+            <button
+              type="button"
+              class="page-button"
+              [disabled]="page() === totalPages()"
+              (click)="setPage(page() + 1)"
+            >
+              <span class="pi pi-angle-right"></span>
+            </button>
+          </div>
+        </footer>
       </section>
       @if (reordering()) {
         <div class="saving-order"><span class="pi pi-spin pi-spinner"></span>{{ 'debts.savingOrder' | translate }}</div>
@@ -258,40 +305,12 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
     section input {
       padding-left: 2.5rem;
     }
-    .debt-card {
-      display: grid;
-      gap: 1rem;
-      border: var(--border-width) solid var(--border-color);
-      border-top: 4px solid #60a5fa;
-      border-radius: 1rem;
-      padding: 1.25rem;
-      background: var(--color-surface);
-      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
-      transition:
-        opacity 0.15s,
-        transform 0.15s;
-    }
-    .debt-card.dragging {
+    tr.dragging {
       opacity: 0.5;
-      transform: scale(0.98);
-    }
-    h2,
-    p {
-      margin: 0;
-    }
-    h2 {
-      color: var(--color-text-primary);
-      font-size: 1rem;
-    }
-    p {
-      margin-top: 0.25rem;
-      color: var(--color-text-secondary);
-      font-size: 0.75rem;
     }
     .drag-handle {
       color: var(--color-text-muted);
       cursor: grab;
-      padding-top: 0.2rem;
     }
     .method,
     .status {
@@ -324,51 +343,41 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
       background: #ecfdf5;
       color: #059669;
     }
-    .delete {
-      width: 2rem;
-      height: 2rem;
+    .icon-action,
+    .page-button {
+      width: 2.25rem;
+      height: 2.25rem;
       display: grid;
       place-items: center;
       border: 0;
-      border-radius: 0.55rem;
-      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
-      color: #dc2626;
+      border-radius: 0.6rem;
+      background: transparent;
       cursor: pointer;
     }
-    .amount-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-    }
-    .amount-grid div {
-      display: grid;
-      gap: 0.2rem;
-    }
-    .amount-grid span {
-      color: var(--color-text-secondary);
-      font-size: 0.68rem;
-    }
-    .amount-grid strong {
-      color: var(--color-text-primary);
-      font-size: 0.9rem;
-    }
-    .amount-grid .due {
+    .icon-action.delete {
       color: #dc2626;
     }
-    .debt-card footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      border-top: 1px solid var(--border-color);
-      padding-top: 0.85rem;
-      color: var(--color-text-secondary);
-      font-size: 0.75rem;
+    .icon-action.delete:hover {
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
     }
-    footer a {
+    .icon-action.delete:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .page-button {
+      border: var(--border-width) solid var(--border-color);
+      color: var(--color-text-secondary);
+    }
+    .page-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+    }
+    .view-link {
       color: #2563eb;
       font-weight: 700;
+      font-size: 0.8rem;
       text-decoration: none;
+      white-space: nowrap;
     }
     .saving-order {
       position: fixed;
@@ -450,7 +459,6 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
       font-weight: 700;
     }
     @media (max-width: 520px) {
-      .amount-grid,
       .two-columns {
         grid-template-columns: 1fr;
       }
@@ -468,7 +476,9 @@ export class DebtsComponent implements OnInit, OnDestroy {
   private readonly route = inject(ActivatedRoute);
   private searchTimer?: ReturnType<typeof setTimeout>;
   private previousOrder: DebtSummary[] = [];
+  private readonly pageSize = 10;
   readonly today = new Date().toISOString().slice(0, 10);
+  readonly page = signal(1);
   readonly debts = signal<DebtSummary[]>([]);
   readonly debtors = signal<Debtor[]>([]);
   readonly installmentChoices = signal<number[]>([]);
@@ -484,6 +494,11 @@ export class DebtsComponent implements OnInit, OnDestroy {
   readonly reordering = signal(false);
   readonly method = signal<DebtMethod>('INSTALLMENT');
   readonly canManage = computed(() => this.auth.currentUser()?.role === 'CREDITOR');
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.debts().length / this.pageSize)));
+  readonly pagedDebts = computed(() => {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.debts().slice(start, start + this.pageSize);
+  });
   readonly form = this.fb.nonNullable.group({
     debtorUsername: ['', Validators.required],
     title: ['', [Validators.required, Validators.maxLength(200)]],
@@ -522,7 +537,16 @@ export class DebtsComponent implements OnInit, OnDestroy {
     this.api
       .getAll(this.debtorFilter(), this.search())
       .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({ next: (rows) => this.debts.set(rows), error: () => this.loadError.set(true) });
+      .subscribe({
+        next: (rows) => {
+          this.debts.set(rows);
+          this.page.set(1);
+        },
+        error: () => this.loadError.set(true)
+      });
+  }
+  setPage(page: number): void {
+    this.page.set(Math.min(Math.max(1, page), this.totalPages()));
   }
   searchChanged(event: Event): void {
     this.search.set((event.target as HTMLInputElement).value.slice(0, 50));
