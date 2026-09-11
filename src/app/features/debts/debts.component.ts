@@ -511,19 +511,26 @@ export class DebtsComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     if (this.canManage()) {
-      this.userApi
-        .getDebtors()
-        .subscribe({ next: (rows) => this.debtors.set(rows), error: () => this.debtors.set([]) });
-      this.adminApi
-        .getInstallmentChoices()
-        .subscribe({ next: (rows) => this.installmentChoices.set(rows), error: () => this.installmentChoices.set([]) });
-      this.loading.set(false);
       const restoredDebtor = this.route.snapshot.queryParamMap.get('debtor');
       if (restoredDebtor) {
         this.debtorFilter.set(restoredDebtor);
         this.hasSelectedFilter.set(true);
         this.load();
       }
+      this.userApi.getDebtors().subscribe({
+        next: (rows) => {
+          this.debtors.set(rows);
+          if (restoredDebtor) {
+            this.debtorFilter.set('');
+            queueMicrotask(() => this.debtorFilter.set(restoredDebtor));
+          }
+        },
+        error: () => this.debtors.set([])
+      });
+      this.adminApi
+        .getInstallmentChoices()
+        .subscribe({ next: (rows) => this.installmentChoices.set(rows), error: () => this.installmentChoices.set([]) });
+      this.loading.set(false);
     } else {
       this.load();
     }
