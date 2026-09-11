@@ -26,7 +26,9 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
     ErrorStateComponent
   ],
   template: `
-    <a routerLink="/debts" class="back"><span class="pi pi-arrow-left"></span>{{ 'debts.backToList' | translate }}</a>
+    <a routerLink="/debts" [queryParams]="backQueryParams" class="back"
+      ><span class="pi pi-arrow-left"></span>{{ 'debts.backToList' | translate }}</a
+    >
     @if (loading()) {
       <div class="loading"><span class="pi pi-spin pi-spinner"></span></div>
     } @else if (loadError()) {
@@ -515,6 +517,7 @@ export class DebtDetailComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly alerts = inject(SweetAlertService);
   private readonly id = Number(this.route.snapshot.paramMap.get('id'));
+  readonly backQueryParams = { debtor: this.route.snapshot.queryParamMap.get('debtor') || null };
   private paymentAction: 'pay' | 'interest' | 'full' = 'pay';
   private selectedInstallment: Installment | null = null;
   readonly today = new Date().toISOString().slice(0, 10);

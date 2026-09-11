@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 import { CreateDebtRequest, DebtMethod, DebtSummary } from '../../core/models/debt.model';
@@ -145,7 +145,7 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
             </div>
             <footer>
               <span>{{ debt.dueLabel }}</span
-              ><a [routerLink]="['/debts', debt.id]"
+              ><a [routerLink]="['/debts', debt.id]" [queryParams]="{ debtor: debtorFilter() || null }"
                 >{{ 'common.viewDetails' | translate }} <i class="pi pi-arrow-right"></i
               ></a>
             </footer>
@@ -174,16 +174,6 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
           </select>
         </div>
         <div class="field">
-          <label>{{ 'debts.method' | translate }} <b>*</b></label>
-          <div class="method-picker">
-            <button type="button" [class.active]="method() === 'INSTALLMENT'" (click)="setMethod('INSTALLMENT')">
-              {{ 'debtMethod.INSTALLMENT' | translate }}</button
-            ><button type="button" [class.active]="method() === 'OPEN'" (click)="setMethod('OPEN')">
-              {{ 'debtMethod.OPEN' | translate }}
-            </button>
-          </div>
-        </div>
-        <div class="field">
           <label>{{ 'debts.debtTitle' | translate }} <b>*</b></label
           ><input type="text" formControlName="title" maxlength="200" />
         </div>
@@ -194,8 +184,18 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
           </div>
         }
         <div class="field">
+          <label>{{ 'debts.method' | translate }} <b>*</b></label>
+          <div class="method-picker">
+            <button type="button" [class.active]="method() === 'INSTALLMENT'" (click)="setMethod('INSTALLMENT')">
+              {{ 'debtMethod.INSTALLMENT' | translate }}</button
+            ><button type="button" [class.active]="method() === 'OPEN'" (click)="setMethod('OPEN')">
+              {{ 'debtMethod.OPEN' | translate }}
+            </button>
+          </div>
+        </div>
+        <div class="field">
           <label>{{ 'debts.startDate' | translate }} <b>*</b></label
-          ><input type="date" formControlName="startDate" [max]="today" />
+          ><input type="date" formControlName="startDate" />
         </div>
         @if (method() === 'INSTALLMENT') {
           <div class="two-columns">
@@ -465,6 +465,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
   private readonly adminApi = inject(AdminApiService);
   private readonly auth = inject(AuthService);
   private readonly alerts = inject(SweetAlertService);
+  private readonly route = inject(ActivatedRoute);
   private searchTimer?: ReturnType<typeof setTimeout>;
   private previousOrder: DebtSummary[] = [];
   readonly today = new Date().toISOString().slice(0, 10);
@@ -502,6 +503,12 @@ export class DebtsComponent implements OnInit, OnDestroy {
         .getInstallmentChoices()
         .subscribe({ next: (rows) => this.installmentChoices.set(rows), error: () => this.installmentChoices.set([]) });
       this.loading.set(false);
+      const restoredDebtor = this.route.snapshot.queryParamMap.get('debtor');
+      if (restoredDebtor) {
+        this.debtorFilter.set(restoredDebtor);
+        this.hasSelectedFilter.set(true);
+        this.load();
+      }
     } else {
       this.load();
     }
@@ -532,7 +539,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
   openCreate(): void {
     if (!this.canManage()) return;
     this.form.reset({
-      debtorUsername: '',
+      debtorUsername: this.debtorFilter(),
       title: '',
       description: '',
       startDate: this.today,
