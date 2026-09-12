@@ -4,7 +4,9 @@ import Swal, { SweetAlertIcon } from 'sweetalert2';
 
 export interface ConfirmDialogOptions {
   titleKey: string;
+  titleParams?: Record<string, unknown>;
   textKey?: string;
+  textParams?: Record<string, unknown>;
   icon?: SweetAlertIcon;
   emoji?: string;
   imageUrl?: string;
@@ -74,8 +76,8 @@ export class SweetAlertService {
 
   private buildConfirmConfig(options: ConfirmDialogOptions) {
     return {
-      title: this.translate.instant(options.titleKey),
-      text: options.textKey ? this.translate.instant(options.textKey) : undefined,
+      title: this.translate.instant(options.titleKey, options.titleParams),
+      text: options.textKey ? this.translate.instant(options.textKey, options.textParams) : undefined,
       imageUrl: options.imageUrl,
       imageHeight: options.imageUrl ? 140 : undefined,
       iconHtml: !options.imageUrl && options.emoji ? options.emoji : undefined,

@@ -65,11 +65,11 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
           </article>
           <article>
             <span>{{ 'debts.paidAmount' | translate }}</span
-            ><strong>฿{{ current.paidAmount | number: '1.2-2' }}</strong>
+            ><strong>฿{{ paidAmount() | number: '1.2-2' }}</strong>
           </article>
           <article>
             <span>{{ 'debts.remainingAmount' | translate }}</span
-            ><strong>฿{{ current.amount - current.paidAmount | number: '1.2-2' }}</strong>
+            ><strong>฿{{ current.amount - paidAmount() | number: '1.2-2' }}</strong>
           </article>
           <article>
             <span>{{ 'debts.startDate' | translate }}</span
@@ -439,8 +439,8 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
       cursor: pointer;
     }
     .pay {
-      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
-      color: #2563eb;
+      background: #16a34a;
+      color: #fff;
     }
     .interest {
       margin-left: 0.35rem;
@@ -529,6 +529,16 @@ export class DebtDetailComponent implements OnInit {
   readonly recordDialog = signal(false);
   readonly editingRecord = signal<OpenLoanRecord | null>(null);
   readonly canManage = computed(() => this.auth.currentUser()?.role === 'CREDITOR');
+  readonly paidAmount = computed(() => {
+    const current = this.debt();
+    if (!current) return 0;
+    if (current.method === 'OPEN') {
+      return (current.openRecords ?? [])
+        .filter((row) => row.status === 'PAID')
+        .reduce((sum, row) => sum + row.totalPaid, 0);
+    }
+    return current.paidAmount;
+  });
   readonly paymentForm = this.fb.nonNullable.group({ payDate: [this.today, Validators.required] });
   readonly recordForm = this.fb.nonNullable.group({
     payDate: [this.today, Validators.required],

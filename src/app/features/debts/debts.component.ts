@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 import { CreateDebtRequest, DebtMethod, DebtSummary } from '../../core/models/debt.model';
@@ -474,6 +474,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
   private readonly auth = inject(AuthService);
   private readonly alerts = inject(SweetAlertService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private searchTimer?: ReturnType<typeof setTimeout>;
   private previousOrder: DebtSummary[] = [];
   private readonly pageSize = 10;
@@ -565,6 +566,12 @@ export class DebtsComponent implements OnInit, OnDestroy {
     const value = (event.target as HTMLSelectElement).value;
     this.debtorFilter.set(value);
     this.hasSelectedFilter.set(Boolean(value));
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { debtor: value || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
     if (value) this.load();
   }
   openCreate(): void {
@@ -637,6 +644,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
     if (this.deletingId() !== null) return;
     const confirmed = await this.alerts.confirm({
       titleKey: 'debts.deleteTitle',
+      titleParams: { title: debt.title },
       textKey: 'debts.deleteDescription',
       confirmButtonKey: 'common.delete',
       cancelButtonKey: 'common.cancel'

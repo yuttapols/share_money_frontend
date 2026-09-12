@@ -207,7 +207,7 @@
     "remainingAmount": "Remaining amount",
     "savingOrder": "Saving order...",
     "reorderFailed": "Unable to save the order. The previous order was restored",
-    "deleteTitle": "Delete this debt?",
+    "deleteTitle": "Delete debt \"{{title}}\"?",
     "deleteDescription": "Related installments and history will be permanently deleted",
     "backToList": "Back to debts",
     "markFullPaid": "Mark fully paid",

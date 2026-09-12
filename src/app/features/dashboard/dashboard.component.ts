@@ -342,62 +342,6 @@ interface DashboardOverviewCard {
       </section>
     }
 
-    @if (isDebtor()) {
-      <section class="mt-4 grid grid-cols-1 gap-4">
-        <div
-          class="flex h-full flex-col overflow-hidden rounded-3xl border border-t-4 border-slate-300 border-t-violet-300 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800"
-        >
-          <header class="flex items-center justify-between p-5 pb-3">
-            <h2 class="m-0 text-sm font-semibold text-slate-800 dark:text-slate-100">
-              {{ 'documents.title' | translate }}
-            </h2>
-            <a
-              routerLink="/documents"
-              class="flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-700"
-            >
-              {{ 'common.viewAll' | translate }}<i class="pi pi-arrow-right text-[0.65rem]"></i>
-            </a>
-          </header>
-          @if (!loadingDocuments() && documents().length === 0) {
-            <app-empty-state
-              icon="pi-file"
-              [title]="'documents.empty' | translate"
-              [message]="'documents.emptyDescription' | translate"
-            />
-          } @else {
-            <div class="overflow-x-auto">
-              <table class="w-full min-w-[20rem] border-collapse text-left text-sm">
-                <thead>
-                  <tr class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
-                    <th class="px-5 py-2">{{ 'documents.documentTitle' | translate }}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  @if (loadingDocuments()) {
-                    @for (row of skeletonRows; track row) {
-                      <tr class="border-t border-slate-100 dark:border-slate-700">
-                        <td class="px-5 py-3"><app-skeleton width="60%" height="0.9rem" /></td>
-                      </tr>
-                    }
-                  } @else {
-                    @for (document of recentDocuments(); track document.id) {
-                      <tr class="border-t border-slate-100 dark:border-slate-700">
-                        <td class="px-5 py-3 text-slate-700 dark:text-slate-200">
-                          <span class="flex items-center gap-2.5">
-                            <i class="pi pi-file-pdf text-xs text-violet-600"></i>{{ document.title }}
-                          </span>
-                        </td>
-                      </tr>
-                    }
-                  }
-                </tbody>
-              </table>
-            </div>
-          }
-        </div>
-      </section>
-    }
-
     <section [class]="'mt-4 grid grid-cols-1 gap-4' + (isAdmin() ? ' lg:grid-cols-2' : '')">
       @if (isAdmin()) {
         <div
