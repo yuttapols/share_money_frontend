@@ -24,8 +24,8 @@ import { passwordValidators, resolveValidationError, usernameValidators } from '
           />
           <p class="eyebrow">SMART PERSONAL FINANCE</p>
           <h1>
-            <span>{{ 'login.heroLine1' | translate }}</span
-            ><span class="accent">{{ 'login.heroLine2' | translate }}</span>
+            <span>{{ 'login.heroLine1' | translate }} <span class="accent">{{ 'login.heroAccent1' | translate }}</span></span
+            ><span>{{ 'login.heroLine2' | translate }} <span class="accent">{{ 'login.heroAccent2' | translate }}</span></span>
           </h1>
           <p>{{ 'login.heroDescription' | translate }}</p>
           <div class="trust">

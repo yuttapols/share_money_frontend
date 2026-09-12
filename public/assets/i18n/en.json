@@ -35,8 +35,10 @@
     "changePasswordConfirmText": "You will be signed out and need to sign in again with your new password."
   },
   "login": {
-    "heroLine1": "Borrowing and repayment",
-    "heroLine2": "Clearly managed in one place",
+    "heroLine1": "Borrow smart,",
+    "heroAccent1": "get repaid",
+    "heroLine2": "Keep using,",
+    "heroAccent2": "keep growing",
     "heroDescription": "Manage payments and important records in one secure and easy-to-understand workspace.",
     "secure": "Secure data",
     "clear": "Clear overview",
