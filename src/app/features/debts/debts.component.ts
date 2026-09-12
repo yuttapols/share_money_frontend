@@ -523,7 +523,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
           this.debtors.set(rows);
           if (restoredDebtor) {
             this.debtorFilter.set('');
-            queueMicrotask(() => this.debtorFilter.set(restoredDebtor));
+            setTimeout(() => this.debtorFilter.set(restoredDebtor));
           }
         },
         error: () => this.debtors.set([])

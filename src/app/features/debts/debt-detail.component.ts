@@ -53,9 +53,12 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
             <p>{{ current.description }}</p>
           </div>
           @if (canManage() && current.method === 'FULL') {
-            <app-button [loading]="actionKey() === 'full'" (pressed)="toggleFullPaid(current)">{{
-              (current.status === 'PAID' ? 'debts.cancelPayment' : 'debts.markFullPaid') | translate
-            }}</app-button>
+            <app-button
+              [variant]="current.status === 'PAID' ? 'danger' : 'primary'"
+              [loading]="actionKey() === 'full'"
+              (pressed)="toggleFullPaid(current)"
+              >{{ (current.status === 'PAID' ? 'debts.cancelPayment' : 'debts.markFullPaid') | translate }}</app-button
+            >
           }
         </header>
         <section class="summary-grid">
@@ -113,7 +116,7 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
                         @if (canManage()) {
                           <button
                             type="button"
-                            class="pay"
+                            [class]="row.status === 'PAID' ? 'pay pay--cancel' : 'pay'"
                             [disabled]="actionKey() !== ''"
                             (click)="payInstallment(row)"
                           >
@@ -440,6 +443,10 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
     }
     .pay {
       background: #16a34a;
+      color: #fff;
+    }
+    .pay.pay--cancel {
+      background: #dc2626;
       color: #fff;
     }
     .interest {

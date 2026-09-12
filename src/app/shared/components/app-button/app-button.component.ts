@@ -7,6 +7,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     [type]="type()"
     class="app-button"
     [class.app-button--secondary]="variant() === 'secondary'"
+    [class.app-button--danger]="variant() === 'danger'"
     [disabled]="disabled() || loading()"
     (click)="pressed.emit()"
   >
@@ -50,12 +51,20 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       background: var(--color-surface-muted);
       color: var(--color-text-primary);
     }
+    .app-button--danger {
+      background: #dc2626;
+      color: #fff;
+    }
+    .app-button--danger:hover:not(:disabled) {
+      background: #b91c1c;
+      box-shadow: 0 8px 18px rgba(220, 38, 38, 0.24);
+    }
   `,
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppButtonComponent {
   readonly type = input<'button' | 'submit'>('button');
-  readonly variant = input<'primary' | 'secondary'>('primary');
+  readonly variant = input<'primary' | 'secondary' | 'danger'>('primary');
   readonly icon = input('');
   readonly loading = input(false);
   readonly disabled = input(false);
