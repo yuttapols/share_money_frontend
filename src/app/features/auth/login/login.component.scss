@@ -70,7 +70,7 @@
   text-wrap: balance;
   text-shadow: 0 8px 24px rgba(4, 18, 38, 0.22);
 }
-.visual-content h1 span {
+.visual-content h1 > span {
   display: block;
   white-space: nowrap;
 }
