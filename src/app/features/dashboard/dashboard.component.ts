@@ -215,7 +215,7 @@ interface DashboardOverviewCard {
             </div>
             @if (debtorTotalPages() > 1) {
               <footer
-                class="flex items-center justify-between border-t border-slate-100 px-5 py-2.5 dark:border-slate-700"
+                class="flex items-center justify-between border-t border-slate-200 px-5 py-2.5 dark:border-slate-700"
               >
                 <span class="text-xs text-slate-400 dark:text-slate-500">
                   {{ 'common.pageOf' | translate: { current: debtorPage(), total: debtorTotalPages() } }}
@@ -382,7 +382,7 @@ interface DashboardOverviewCard {
               <table class="w-full min-w-[420px] table-fixed border-collapse text-left">
                 <thead>
                   <tr
-                    class="border-t border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-500"
+                    class="border-t border-slate-200 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-500"
                   >
                     <th class="w-1/2 px-6 py-3 text-center font-semibold">
                       {{ 'dashboard.tableCreditor' | translate }}
@@ -396,7 +396,7 @@ interface DashboardOverviewCard {
                 <tbody>
                   @if (loadingCreditors()) {
                     @for (row of skeletonRows; track row) {
-                      <tr class="border-t border-slate-100 dark:border-slate-700">
+                      <tr class="border-t border-slate-200 dark:border-slate-700">
                         <td class="px-6 py-3">
                           <div class="flex items-center justify-center gap-2.5">
                             <app-skeleton variant="circle" width="2rem" height="2rem" />
@@ -410,7 +410,7 @@ interface DashboardOverviewCard {
                   } @else {
                     @for (row of pagedCreditorRows(); track row.id; let i = $index) {
                       <tr
-                        class="border-t border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                        class="border-t border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
                       >
                         <td class="px-6 py-3">
                           <div class="flex items-center justify-center gap-2.5">
@@ -451,7 +451,7 @@ interface DashboardOverviewCard {
             </div>
             @if (creditorTotalPages() > 1) {
               <footer
-                class="flex items-center justify-between border-t border-slate-100 px-6 py-3 dark:border-slate-700"
+                class="flex items-center justify-between border-t border-slate-200 px-6 py-3 dark:border-slate-700"
               >
                 <span class="text-xs text-slate-400 dark:text-slate-500">
                   {{ 'common.pageOf' | translate: { current: creditorPage(), total: creditorTotalPages() } }}
@@ -519,7 +519,7 @@ interface DashboardOverviewCard {
               <table class="w-full min-w-[480px] table-fixed border-collapse text-left">
                 <thead>
                   <tr
-                    class="border-t border-slate-100 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-500"
+                    class="border-t border-slate-200 text-xs uppercase tracking-wide text-slate-400 dark:border-slate-700 dark:text-slate-500"
                   >
                     <th class="w-1/4 px-6 py-3 text-center font-semibold">{{ 'dashboard.tableUser' | translate }}</th>
                     <th class="w-1/6 px-6 py-3 text-center font-semibold">{{ 'dashboard.tableRole' | translate }}</th>
@@ -532,7 +532,7 @@ interface DashboardOverviewCard {
                 <tbody>
                   @if (loadingLoginHistory()) {
                     @for (row of skeletonRows; track row) {
-                      <tr class="border-t border-slate-100 dark:border-slate-700">
+                      <tr class="border-t border-slate-200 dark:border-slate-700">
                         <td class="px-6 py-3 text-center"><app-skeleton width="5rem" height="0.9rem" /></td>
                         <td class="px-6 py-3 text-center"><app-skeleton width="4rem" height="1.4rem" /></td>
                         <td class="px-6 py-3 text-center"><app-skeleton width="6rem" height="0.9rem" /></td>
@@ -542,7 +542,7 @@ interface DashboardOverviewCard {
                   } @else {
                     @for (row of pagedLoginHistoryRows(); track row.timestamp + row.username) {
                       <tr
-                        class="border-t border-slate-100 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                        class="border-t border-slate-200 transition-colors hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/50"
                       >
                         <td class="px-6 py-3 text-center text-sm font-semibold text-slate-800 dark:text-slate-100">
                           {{ row.username }}
@@ -572,7 +572,7 @@ interface DashboardOverviewCard {
             </div>
             @if (loginHistoryTotalPages() > 1) {
               <footer
-                class="flex items-center justify-between border-t border-slate-100 px-6 py-3 dark:border-slate-700"
+                class="flex items-center justify-between border-t border-slate-200 px-6 py-3 dark:border-slate-700"
               >
                 <span class="text-xs text-slate-400 dark:text-slate-500">
                   {{ 'common.pageOf' | translate: { current: loginHistoryPage(), total: loginHistoryTotalPages() } }}
