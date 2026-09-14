@@ -78,7 +78,7 @@ import { bankAccountValidators } from '../../shared/utils/validators.util';
             </thead>
             <tbody>
               @for (account of accounts(); track account.id) {
-                <tr class="border-t border-slate-100 dark:border-slate-700">
+                <tr class="border-t border-slate-200 dark:border-slate-700">
                   <td class="px-5 py-3 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     {{ account.bankName }}
                   </td>

@@ -50,7 +50,6 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
               }}</span>
             </div>
             <h1>{{ current.title }}</h1>
-            <p>{{ current.description }}</p>
           </div>
           @if (canManage() && current.method === 'FULL') {
             <app-button
@@ -72,12 +71,25 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
           </article>
           <article>
             <span>{{ 'debts.remainingAmount' | translate }}</span
-            ><strong>฿{{ current.amount - paidAmount() | number: '1.2-2' }}</strong>
+            ><strong>฿{{ remainingAmount() | number: '1.2-2' }}</strong>
           </article>
-          <article>
-            <span>{{ 'debts.startDate' | translate }}</span
-            ><strong>{{ current.startDate | date: 'd MMM y' }}</strong>
-          </article>
+          @if (current.method === 'OPEN' || current.method === 'INSTALLMENT') {
+            <article>
+              <span>{{ 'debts.nextDueDate' | translate }}</span
+              ><strong>{{ nextDueDate() | date: 'd MMM y' }}</strong>
+            </article>
+          } @else {
+            <article>
+              <span>{{ 'debts.startDate' | translate }}</span
+              ><strong>{{ current.startDate | date: 'd MMM y' }}</strong>
+            </article>
+          }
+          @if (current.method === 'OPEN' && currentDueRecord(); as due) {
+            <article [class.paid]="due.status === 'PAID'">
+              <span>{{ 'debts.dueAmount' | translate }}</span
+              ><strong>฿{{ due.totalPaid | number: '1.2-2' }}</strong>
+            </article>
+          }
         </section>
 
         @if (current.method === 'INSTALLMENT') {
@@ -317,10 +329,6 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
       color: var(--color-text-primary);
       font-size: var(--font-size-heading);
     }
-    .detail-header p {
-      margin-top: 0.3rem;
-      color: var(--color-text-secondary);
-    }
     .badges {
       display: flex;
       gap: 0.45rem;
@@ -354,7 +362,7 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
     }
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
       gap: 1rem;
       margin-top: 1.25rem;
     }
@@ -366,6 +374,9 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
       border-radius: 1rem;
       padding: 1rem;
       background: var(--color-surface);
+    }
+    .summary-grid article.paid {
+      border-top-color: #34d399;
     }
     .summary-grid span {
       color: var(--color-text-secondary);
@@ -546,6 +557,60 @@ export class DebtDetailComponent implements OnInit {
     }
     return current.paidAmount;
   });
+  readonly remainingAmount = computed(() => {
+    const current = this.debt();
+    if (!current) return 0;
+    if (current.method === 'OPEN') {
+      const records = current.openRecords ?? [];
+      const latest = records[records.length - 1];
+      if (latest) return latest.remainingPrincipal;
+    }
+    return current.amount - this.paidAmount();
+  });
+  readonly nextDueDate = computed(() => {
+    const current = this.debt();
+    if (!current) return null;
+    if (current.method === 'OPEN') {
+      const paidRecords = (current.openRecords ?? []).filter((row) => row.status === 'PAID');
+      if (paidRecords.length === 0) return current.startDate;
+      const latestPayDate = paidRecords.reduce(
+        (latest, row) => (row.payDate > latest ? row.payDate : latest),
+        paidRecords[0].payDate
+      );
+      return this.addMonth(latestPayDate);
+    }
+    if (current.method === 'INSTALLMENT') {
+      const paidInstallments = (current.installments ?? []).filter((row) => row.status === 'PAID');
+      if (paidInstallments.length === 0) return current.startDate;
+      const latestPayDate = paidInstallments.reduce((latest, row) => {
+        const date = row.payDate ?? row.dueDate;
+        return date > latest ? date : latest;
+      }, paidInstallments[0].payDate ?? paidInstallments[0].dueDate);
+      return this.addMonth(latestPayDate);
+    }
+    return current.startDate;
+  });
+  readonly currentDueRecord = computed(() => {
+    const current = this.debt();
+    if (!current || current.method !== 'OPEN') return null;
+    const records = current.openRecords ?? [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    return (
+      records.find((row) => {
+        const payDate = new Date(row.payDate);
+        const monthsAhead = (payDate.getFullYear() - currentYear) * 12 + (payDate.getMonth() - currentMonth);
+        if (monthsAhead === 0) return true;
+        return monthsAhead === 1 && payDate.getDate() <= 5;
+      }) ?? null
+    );
+  });
+  private addMonth(dateStr: string): Date {
+    const next = new Date(dateStr);
+    next.setMonth(next.getMonth() + 1);
+    return next;
+  }
   readonly paymentForm = this.fb.nonNullable.group({ payDate: [this.today, Validators.required] });
   readonly recordForm = this.fb.nonNullable.group({
     payDate: [this.today, Validators.required],

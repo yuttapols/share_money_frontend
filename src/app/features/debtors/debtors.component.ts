@@ -41,7 +41,7 @@ type SortField = 'name' | 'username';
       class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
     >
       <div
-        class="flex flex-col gap-3 border-b border-slate-100 p-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between"
+        class="flex flex-col gap-3 border-b border-slate-200 p-4 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between"
       >
         <div class="relative w-full sm:max-w-sm">
           <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></span>
@@ -103,7 +103,7 @@ type SortField = 'name' | 'username';
             <tbody>
               @for (debtor of pagedDebtors(); track debtor.id) {
                 <tr
-                  class="border-t border-slate-100 hover:bg-slate-50/70 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                  class="border-t border-slate-200 hover:bg-slate-50/70 dark:border-slate-700 dark:hover:bg-slate-800/50"
                 >
                   <td class="px-5 py-3">
                     <div class="flex items-center gap-3">
@@ -146,7 +146,7 @@ type SortField = 'name' | 'username';
             </tbody>
           </table>
         </div>
-        <footer class="flex items-center justify-between border-t border-slate-100 px-5 py-3 dark:border-slate-700">
+        <footer class="flex items-center justify-between border-t border-slate-200 px-5 py-3 dark:border-slate-700">
           <span class="text-xs text-slate-500 dark:text-slate-400">
             {{ 'common.pageOf' | translate: { current: page(), total: totalPages() } }}
           </span>

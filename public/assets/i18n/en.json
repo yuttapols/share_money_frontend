@@ -198,6 +198,7 @@
     "debtTitle": "Title",
     "descriptionField": "Description",
     "startDate": "Start date",
+    "nextDueDate": "Next payment date",
     "installmentCount": "Installments",
     "chooseCount": "Choose installment count",
     "installmentAmount": "Installment amount",

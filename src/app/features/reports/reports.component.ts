@@ -84,7 +84,7 @@ import { FileDownloadService } from '../../shared/services/file-download.service
             <span>{{ 'reports.dueCount' | translate }}</span
             ><strong>{{ data.dueCount | number }}</strong>
           </article>
-          <article class="summary from-emerald-500 to-teal-600">
+          <article class="summary from-red-500 to-rose-600">
             <span>{{ 'reports.totalDue' | translate }}</span
             ><strong>&#3647;{{ data.total | number: '1.2-2' }}</strong>
           </article>
@@ -110,8 +110,8 @@ import { FileDownloadService } from '../../shared/services/file-download.service
                   </tr>
                 </thead>
                 <tbody>
-                  @for (line of data.lines; track line.title + line.what) {
-                    <tr class="border-t border-slate-100 dark:border-slate-700">
+                  @for (line of pagedLines(); track line.title + line.what) {
+                    <tr class="border-t border-slate-200 dark:border-slate-700">
                       <td class="font-semibold text-slate-800 dark:text-slate-100">{{ line.title }}</td>
                       <td class="text-slate-600 dark:text-slate-300">{{ line.what }}</td>
                       <td class="text-right font-semibold text-slate-700 dark:text-slate-300">
@@ -127,6 +127,33 @@ import { FileDownloadService } from '../../shared/services/file-download.service
                 </tbody>
               </table>
             </div>
+            @if (linesTotalPages() > 1) {
+              <footer
+                class="flex items-center justify-between border-t border-slate-200 px-5 py-2.5 dark:border-slate-700"
+              >
+                <span class="text-xs text-slate-400 dark:text-slate-500">
+                  {{ 'common.pageOf' | translate: { current: linesPage(), total: linesTotalPages() } }}
+                </span>
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    class="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-slate-500 dark:hover:bg-slate-700"
+                    [disabled]="linesPage() === 1"
+                    (click)="linesPage.set(linesPage() - 1)"
+                  >
+                    <i class="pi pi-angle-left text-xs"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-slate-500 dark:hover:bg-slate-700"
+                    [disabled]="linesPage() === linesTotalPages()"
+                    (click)="linesPage.set(linesPage() + 1)"
+                  >
+                    <i class="pi pi-angle-right text-xs"></i>
+                  </button>
+                </div>
+              </footer>
+            }
           }
         </section>
       }
@@ -188,6 +215,14 @@ export class ReportsComponent implements OnInit {
   readonly loadError = signal(false);
   readonly downloading = signal(false);
   readonly canFilterByDebtor = computed(() => this.auth.currentUser()?.role === 'CREDITOR');
+  private readonly pageSize = 10;
+  readonly linesPage = signal(1);
+  readonly linesTotalPages = computed(() => Math.max(1, Math.ceil((this.report()?.lines.length ?? 0) / this.pageSize)));
+  readonly pagedLines = computed(() => {
+    const lines = this.report()?.lines ?? [];
+    const start = (this.linesPage() - 1) * this.pageSize;
+    return lines.slice(start, start + this.pageSize);
+  });
   selectedDebtor = '';
 
   ngOnInit(): void {
@@ -204,6 +239,7 @@ export class ReportsComponent implements OnInit {
   load(): void {
     this.report.set(null);
     this.loadError.set(false);
+    this.linesPage.set(1);
     if (!this.selectedDebtor) return;
     this.loading.set(true);
     this.api

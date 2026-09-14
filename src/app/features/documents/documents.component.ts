@@ -96,7 +96,7 @@ import { resolveValidationError } from '../../shared/utils/validators.util';
             <p class="mb-0 mt-1 h-5 text-xs text-slate-500 dark:text-slate-400">
               {{ document.debtorUsername || ('documents.allDebtors' | translate) }}
             </p>
-            <div class="mt-5 flex gap-2 border-t border-slate-100 pt-4 dark:border-slate-700">
+            <div class="mt-5 flex gap-2 border-t border-slate-200 pt-4 dark:border-slate-700">
               <button
                 type="button"
                 class="document-action download"

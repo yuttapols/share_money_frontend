@@ -121,7 +121,7 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
             <tbody>
               @for (debt of pagedDebts(); track debt.id) {
                 <tr
-                  class="border-t border-slate-100 hover:bg-slate-50/70 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                  class="border-t border-slate-200 hover:bg-slate-50/70 dark:border-slate-700 dark:hover:bg-slate-800/50"
                   [class.dragging]="draggedId() === debt.id"
                   [attr.draggable]="canManage()"
                   (dragstart)="dragStart(debt.id)"
@@ -180,7 +180,7 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
             </tbody>
           </table>
         </div>
-        <footer class="flex items-center justify-between border-t border-slate-100 px-5 py-3 dark:border-slate-700">
+        <footer class="flex items-center justify-between border-t border-slate-200 px-5 py-3 dark:border-slate-700">
           <span class="text-xs text-slate-500 dark:text-slate-400">
             {{ 'common.pageOf' | translate: { current: page(), total: totalPages() } }}
           </span>

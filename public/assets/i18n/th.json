@@ -198,6 +198,7 @@
     "debtTitle": "ชื่อรายการ",
     "descriptionField": "รายละเอียด",
     "startDate": "วันที่เริ่มต้น",
+    "nextDueDate": "วันที่ชำระงวดถัดไป",
     "installmentCount": "จำนวนงวด",
     "chooseCount": "เลือกจำนวนงวด",
     "installmentAmount": "ยอดชำระต่องวด",
