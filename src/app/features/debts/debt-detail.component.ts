@@ -112,7 +112,7 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
                   @for (row of current.installments ?? []; track row.no) {
                     <tr>
                       <td>{{ row.no }}</td>
-                      <td>{{ row.payDate ? (row.payDate | date: 'd MMM y') : '-' }}</td>
+                      <td>{{ row.status === 'PAID' && row.payDate ? (row.payDate | date: 'd MMM y') : '-' }}</td>
                       <td class="right">฿{{ row.amount | number: '1.2-2' }}</td>
                       <td>{{ 'installmentKind.' + row.kind | translate }}</td>
                       <td>
@@ -193,8 +193,8 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
                   @for (row of current.openRecords ?? []; track row.no) {
                     <tr>
                       <td>{{ row.no }}</td>
-                      <td>{{ row.payDate | date: 'd MMM y' }}</td>
-                      <td class="right">฿{{ row.interest + (current.installmentAmount ?? 0) | number: '1.2-2' }}</td>
+                      <td>{{ row.status === 'PAID' && row.payDate ? (row.payDate | date: 'd MMM y') : '-' }}</td>
+                      <td class="right">฿{{ current.installmentAmount ?? row.interest | number: '1.2-2' }}</td>
                       <td class="right">฿{{ row.remainingPrincipal | number: '1.2-2' }}</td>
                       <td>
                         <span [class]="row.status === 'PAID' ? 'paid-chip' : 'unpaid-chip'">{{
