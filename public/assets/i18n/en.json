@@ -204,6 +204,7 @@
     "editRecord": "Edit record",
     "interest": "Interest",
     "totalPaid": "Total paid",
+    "amountDue": "Amount due",
     "remainingPrincipal": "Remaining principal",
     "deleteRecordTitle": "Delete this record?",
     "deleteRecordDescription": "The remaining records will be renumbered automatically"

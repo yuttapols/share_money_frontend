@@ -62,10 +62,6 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
             ><strong>฿{{ current.amount | number: '1.2-2' }}</strong>
           </article>
           <article>
-            <span>{{ 'debts.paidAmount' | translate }}</span
-            ><strong>฿{{ current.paidAmount | number: '1.2-2' }}</strong>
-          </article>
-          <article>
             <span>{{ 'debts.remainingAmount' | translate }}</span
             ><strong>฿{{ current.amount - current.paidAmount | number: '1.2-2' }}</strong>
           </article>
@@ -88,7 +84,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
                 <thead>
                   <tr>
                     <th>#</th>
-                    <th>{{ 'debts.dueDate' | translate }}</th>
+                    <th>{{ 'debts.payDate' | translate }}</th>
                     <th class="right">{{ 'debts.amount' | translate }}</th>
                     <th>{{ 'debts.kind' | translate }}</th>
                     <th>{{ 'debts.status' | translate }}</th>
@@ -99,7 +95,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
                   @for (row of current.installments ?? []; track row.no) {
                     <tr>
                       <td>{{ row.no }}</td>
-                      <td>{{ row.dueDate | date: 'd MMM y' }}</td>
+                      <td>{{ row.payDate ? (row.payDate | date: 'd MMM y') : '-' }}</td>
                       <td class="right">฿{{ row.amount | number: '1.2-2' }}</td>
                       <td>{{ 'installmentKind.' + row.kind | translate }}</td>
                       <td>
@@ -170,8 +166,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
                   <tr>
                     <th>#</th>
                     <th>{{ 'debts.payDate' | translate }}</th>
-                    <th class="right">{{ 'debts.interest' | translate }}</th>
-                    <th class="right">{{ 'debts.totalPaid' | translate }}</th>
+                    <th class="right">{{ 'debts.amountDue' | translate }}</th>
                     <th class="right">{{ 'debts.remainingPrincipal' | translate }}</th>
                     <th>{{ 'debts.status' | translate }}</th>
                     <th class="right">{{ 'debts.actions' | translate }}</th>
@@ -182,8 +177,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
                     <tr>
                       <td>{{ row.no }}</td>
                       <td>{{ row.payDate | date: 'd MMM y' }}</td>
-                      <td class="right">฿{{ row.interest | number: '1.2-2' }}</td>
-                      <td class="right">฿{{ row.totalPaid | number: '1.2-2' }}</td>
+                      <td class="right">฿{{ row.interest + (current.installmentAmount ?? 0) | number: '1.2-2' }}</td>
                       <td class="right">฿{{ row.remainingPrincipal | number: '1.2-2' }}</td>
                       <td>
                         <span [class]="row.status === 'PAID' ? 'paid-chip' : 'unpaid-chip'">{{
@@ -349,7 +343,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       gap: 1rem;
       margin-top: 1.25rem;
     }

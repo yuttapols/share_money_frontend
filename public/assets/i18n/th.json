@@ -204,6 +204,7 @@
     "editRecord": "แก้ไขรายการ",
     "interest": "ดอกเบี้ย",
     "totalPaid": "ยอดจ่ายรวม",
+    "amountDue": "ยอดที่ต้องจ่าย",
     "remainingPrincipal": "เงินต้นคงเหลือ",
     "deleteRecordTitle": "ลบรายการนี้?",
     "deleteRecordDescription": "ลำดับรายการที่เหลือจะถูกจัดใหม่โดยอัตโนมัติ"
