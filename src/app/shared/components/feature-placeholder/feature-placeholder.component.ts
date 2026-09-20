@@ -20,9 +20,9 @@ import { TranslatePipe } from '@ngx-translate/core';
       justify-items: center;
       gap: 0.7rem;
       padding: 2rem;
-      border: 1px solid #e8edf3;
+      border: var(--border-width) solid var(--border-color);
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
       text-align: center;
     }
     .placeholder > .pi {
@@ -40,11 +40,11 @@ import { TranslatePipe } from '@ngx-translate/core';
       margin: 0;
     }
     .placeholder h2 {
-      color: #334155;
+      color: var(--color-text-primary);
     }
     .placeholder p {
       max-width: 30rem;
-      color: #64748b;
+      color: var(--color-text-secondary);
       line-height: 1.6;
     }
   `,

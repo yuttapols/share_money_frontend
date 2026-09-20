@@ -7,20 +7,12 @@ import { ProfileApiService } from '../../core/services/profile-api.service';
 import { AppButtonComponent } from '../../shared/components/app-button/app-button.component';
 import { ChangePasswordComponent } from '../auth/change-password/change-password.component';
 import { AvatarCardComponent } from './avatar-card/avatar-card.component';
-import { BankAccountCardComponent } from './bank-account-card/bank-account-card.component';
 import { SweetAlertService } from '../../shared/services/sweet-alert.service';
+import { resolveValidationError, thaiPhoneValidators } from '../../shared/utils/validators.util';
 
 @Component({
   selector: 'app-profile',
-  standalone: true,
-  imports: [
-    ReactiveFormsModule,
-    TranslatePipe,
-    AppButtonComponent,
-    ChangePasswordComponent,
-    AvatarCardComponent,
-    BankAccountCardComponent
-  ],
+  imports: [ReactiveFormsModule, TranslatePipe, AppButtonComponent, ChangePasswordComponent, AvatarCardComponent],
   template: `
     <div class="profile-grid">
       <section class="card">
@@ -42,11 +34,8 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
         </header>
         <form [formGroup]="profileForm">
           <div class="identity">
-            <span>{{ initials() }}</span>
-            <div>
-              <strong>{{ auth.currentUser()?.name }}</strong
-              ><small>{{ auth.currentUser()?.role }}</small>
-            </div>
+            <strong>{{ auth.currentUser()?.name }}</strong
+            ><small>{{ auth.currentUser()?.role }}</small>
           </div>
           <label>{{ 'profile.name' | translate }} <b>*</b></label
           ><input
@@ -58,7 +47,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
             (blur)="profileForm.controls.name.markAsTouched()"
           />
           @if (showError('name')) {
-            <small class="field-error" role="alert">{{ nameError() | translate: { max: 150 } }}</small>
+            <small class="field-error" role="alert">{{ nameError()?.key | translate: nameError()?.params }}</small>
           }
           <label>{{ 'profile.phone' | translate }}</label
           ><input
@@ -96,7 +85,6 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
         <app-avatar-card />
         <app-change-password />
       </div>
-      <app-bank-account-card class="bank-section" />
     </div>
   `,
   styles: `
@@ -110,14 +98,11 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       gap: 1rem;
       align-content: start;
     }
-    .bank-section {
-      grid-column: 1 / -1;
-    }
     .card {
-      border: 1px solid #e8edf3;
+      border: var(--border-width) solid var(--border-color);
       border-top: 4px solid #3b82f6;
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
       overflow: hidden;
     }
     .card > header {
@@ -129,12 +114,12 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     .card h2 {
       margin: 0;
-      color: #1e293b;
+      color: var(--color-text-primary);
       font-size: 1rem;
     }
     .card header p {
       margin: 0.3rem 0 0;
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.78rem;
     }
     .edit-button {
@@ -159,31 +144,16 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       padding: 1.35rem;
     }
     .identity {
-      display: flex;
-      align-items: center;
-      gap: 0.85rem;
-      margin-bottom: 0.6rem;
-    }
-    .identity > span {
-      width: 3.5rem;
-      height: 3.5rem;
-      display: grid;
-      place-items: center;
-      border-radius: 50%;
-      background: #dbeafe;
-      color: #1d4ed8;
-      font-weight: 800;
-    }
-    .identity div {
       display: grid;
       gap: 0.2rem;
+      margin-bottom: 0.6rem;
     }
     .identity small {
-      color: #64748b;
+      color: var(--color-text-secondary);
     }
     .card label {
       margin: 0.85rem 0 0.4rem;
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.83rem;
       font-weight: 650;
     }
@@ -199,27 +169,30 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     .card input[type='tel'],
     .card input[type='password'] {
       min-height: 2.8rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.85rem;
-      background: #fff !important;
-      color: #1e293b !important;
-      -webkit-text-fill-color: #1e293b;
-      box-shadow: 0 0 0 1000px #fff inset;
+      background: var(--color-surface) !important;
+      color: var(--color-text-primary) !important;
+      -webkit-text-fill-color: var(--color-text-primary);
+      box-shadow: 0 0 0 1000px var(--color-surface) inset;
       font: inherit;
       outline: 0;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
     }
     .card input:focus {
-      border-color: #2563eb;
+      border-color: var(--input-focus-border);
       box-shadow:
-        0 0 0 3px rgba(37, 99, 235, 0.1),
-        0 0 0 1000px #fff inset;
+        var(--input-focus-ring),
+        0 0 0 1000px var(--color-surface) inset;
     }
     .card input[readonly] {
-      background: #f8fafc;
-      color: #64748b;
-      -webkit-text-fill-color: #64748b;
-      box-shadow: 0 0 0 1000px #f8fafc inset;
+      background: var(--color-surface-muted);
+      color: var(--color-text-secondary);
+      -webkit-text-fill-color: var(--color-text-secondary);
+      box-shadow: 0 0 0 1000px var(--color-surface-muted) inset;
     }
     .card input.invalid {
       border-color: #dc2626;
@@ -228,13 +201,13 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       border-color: #dc2626;
       box-shadow:
         0 0 0 3px rgba(220, 38, 38, 0.1),
-        0 0 0 1000px #fff inset;
+        0 0 0 1000px var(--color-surface) inset;
     }
     .card input:disabled {
-      background: #f8fafc !important;
-      color: #94a3b8 !important;
-      -webkit-text-fill-color: #94a3b8;
-      box-shadow: 0 0 0 1000px #f8fafc inset;
+      background: var(--color-surface-muted) !important;
+      color: var(--color-text-muted) !important;
+      -webkit-text-fill-color: var(--color-text-muted);
+      box-shadow: 0 0 0 1000px var(--color-surface-muted) inset;
       cursor: not-allowed;
     }
     .form-actions {
@@ -246,7 +219,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     .cancel-button {
       border: 1px solid #fecaca;
       border-radius: 0.7rem;
-      background: #fef2f2;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
       padding: 0.65rem 1rem;
       color: #dc2626;
       font: inherit;
@@ -270,13 +243,12 @@ export class ProfileComponent implements OnInit {
   private readonly profileApi = inject(ProfileApiService);
   private readonly alerts = inject(SweetAlertService);
   readonly auth = inject(AuthService);
-  readonly initials = signal(this.auth.currentUser()?.name.slice(0, 2).toUpperCase() ?? 'SM');
   readonly editing = signal(false);
   readonly saving = signal(false);
   readonly preferredLanguage = signal<'th' | 'en'>('th');
   readonly profileForm = this.fb.nonNullable.group({
     name: [this.auth.currentUser()?.name ?? '', [Validators.required, Validators.maxLength(150)]],
-    phone: ['', [Validators.maxLength(10), Validators.pattern(/^0\d{9}$/)]]
+    phone: ['', thaiPhoneValidators()]
   });
 
   constructor() {
@@ -335,9 +307,7 @@ export class ProfileComponent implements OnInit {
     return control.invalid && (control.dirty || control.touched);
   }
 
-  nameError(): string {
-    const errors = this.profileForm.controls.name.errors;
-    if (errors?.['required']) return 'validation.required';
-    return 'validation.maxlength';
+  nameError() {
+    return resolveValidationError(this.profileForm.controls.name.errors);
   }
 }

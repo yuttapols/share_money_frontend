@@ -1,10 +1,11 @@
 import { DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, inject, OnInit, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 import { DueReport } from '../../core/models/phase-three.model';
 import { Debtor } from '../../core/models/user.model';
+import { AuthService } from '../../core/services/auth.service';
 import { ReportApiService } from '../../core/services/report-api.service';
 import { UserApiService } from '../../core/services/user-api.service';
 import { AppButtonComponent } from '../../shared/components/app-button/app-button.component';
@@ -14,48 +15,62 @@ import { FileDownloadService } from '../../shared/services/file-download.service
 
 @Component({
   selector: 'app-reports',
-  standalone: true,
   imports: [FormsModule, DecimalPipe, TranslatePipe, AppButtonComponent, EmptyStateComponent, ErrorStateComponent],
   template: `
     <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="m-0 text-2xl font-bold text-slate-800">{{ 'reports.title' | translate }}</h1>
-        <p class="mb-0 mt-1 text-sm text-slate-500">{{ 'reports.description' | translate }}</p>
+        <h1 class="m-0 text-base font-bold text-slate-800 dark:text-slate-100">{{ 'reports.title' | translate }}</h1>
+        <p class="mb-0 mt-1 text-sm text-slate-500 dark:text-slate-400">{{ 'reports.description' | translate }}</p>
       </div>
-      <app-button icon="pi-file-pdf" [loading]="downloading()" [disabled]="!report()" (pressed)="downloadPdf()">{{
-        'reports.downloadPdf' | translate
-      }}</app-button>
+      @if (!canFilterByDebtor() || selectedDebtor) {
+        <app-button icon="pi-file-pdf" [loading]="downloading()" [disabled]="!report()" (pressed)="downloadPdf()">{{
+          'reports.downloadPdf' | translate
+        }}</app-button>
+      }
     </header>
 
-    <section class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-      <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500">{{
-        'reports.debtorFilter' | translate
-      }}</label>
-      <select
-        class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none focus:border-blue-500 sm:max-w-sm"
-        maxlength="50"
-        [(ngModel)]="selectedDebtor"
-        (ngModelChange)="load()"
+    @if (canFilterByDebtor()) {
+      <section
+        class="mt-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800"
       >
-        <option value="__all">{{ 'reports.allDebtors' | translate }}</option>
-        @for (debtor of debtors(); track debtor.id) {
-          <option [value]="debtor.username">{{ debtor.name }} ({{ debtor.username }})</option>
-        }
-      </select>
-    </section>
+        <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">{{
+          'reports.debtorFilter' | translate
+        }}</label>
+        <select
+          class="h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-700 outline-none transition-shadow focus:border-blue-500 focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:max-w-sm"
+          maxlength="50"
+          [(ngModel)]="selectedDebtor"
+          (ngModelChange)="load()"
+        >
+          <option value="" disabled>{{ 'reports.selectDebtorPlaceholder' | translate }}</option>
+          <option value="__all">{{ 'reports.allDebtors' | translate }}</option>
+          @for (debtor of debtors(); track debtor.id) {
+            <option [value]="debtor.username">{{ debtor.name }} ({{ debtor.username }})</option>
+          }
+        </select>
+      </section>
+    }
 
     @if (loading()) {
       <section class="mt-5 grid gap-4 sm:grid-cols-3">
         @for (row of [1, 2, 3]; track row) {
-          <div class="h-32 animate-pulse rounded-2xl bg-slate-200"></div>
+          <div class="h-32 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700"></div>
         }
       </section>
     } @else if (loadError()) {
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white">
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <app-error-state
           [title]="'errors.unexpected' | translate"
           [retryLabel]="'common.retry' | translate"
           (retry)="load()"
+        />
+      </div>
+    } @else if (canFilterByDebtor() && !selectedDebtor) {
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+        <app-empty-state
+          icon="pi-users"
+          [title]="'reports.selectDebtorTitle' | translate"
+          [message]="'reports.selectDebtorDescription' | translate"
         />
       </div>
     } @else {
@@ -69,12 +84,14 @@ import { FileDownloadService } from '../../shared/services/file-download.service
             <span>{{ 'reports.dueCount' | translate }}</span
             ><strong>{{ data.dueCount | number }}</strong>
           </article>
-          <article class="summary from-emerald-500 to-teal-600">
+          <article class="summary from-red-500 to-rose-600">
             <span>{{ 'reports.totalDue' | translate }}</span
             ><strong>&#3647;{{ data.total | number: '1.2-2' }}</strong>
           </article>
         </section>
-        <section class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <section
+          class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
+        >
           @if (data.lines.length === 0) {
             <app-empty-state
               icon="pi-check-circle"
@@ -85,7 +102,7 @@ import { FileDownloadService } from '../../shared/services/file-download.service
             <div class="overflow-x-auto">
               <table class="w-full min-w-[38rem] border-collapse text-left">
                 <thead>
-                  <tr class="bg-slate-50 text-xs uppercase text-slate-500">
+                  <tr class="bg-slate-50 text-xs uppercase text-slate-500 dark:bg-slate-800/50 dark:text-slate-400">
                     <th>{{ 'reports.debtTitle' | translate }}</th>
                     <th>{{ 'reports.detail' | translate }}</th>
                     <th class="text-right">{{ 'reports.amount' | translate }}</th>
@@ -93,11 +110,13 @@ import { FileDownloadService } from '../../shared/services/file-download.service
                   </tr>
                 </thead>
                 <tbody>
-                  @for (line of data.lines; track line.title + line.what) {
-                    <tr class="border-t border-slate-100">
-                      <td class="font-semibold text-slate-800">{{ line.title }}</td>
-                      <td class="text-slate-600">{{ line.what }}</td>
-                      <td class="text-right font-semibold text-slate-700">&#3647;{{ line.due | number: '1.2-2' }}</td>
+                  @for (line of pagedLines(); track line.title + line.what) {
+                    <tr class="border-t border-slate-200 dark:border-slate-700">
+                      <td class="font-semibold text-slate-800 dark:text-slate-100">{{ line.title }}</td>
+                      <td class="text-slate-600 dark:text-slate-300">{{ line.what }}</td>
+                      <td class="text-right font-semibold text-slate-700 dark:text-slate-300">
+                        &#3647;{{ line.due | number: '1.2-2' }}
+                      </td>
                       <td class="text-center">
                         <span [class]="line.paid ? 'paid' : 'pending'">{{
                           (line.paid ? 'reports.paid' : 'reports.pending') | translate
@@ -108,6 +127,33 @@ import { FileDownloadService } from '../../shared/services/file-download.service
                 </tbody>
               </table>
             </div>
+            @if (linesTotalPages() > 1) {
+              <footer
+                class="flex items-center justify-between border-t border-slate-200 px-5 py-2.5 dark:border-slate-700"
+              >
+                <span class="text-xs text-slate-400 dark:text-slate-500">
+                  {{ 'common.pageOf' | translate: { current: linesPage(), total: linesTotalPages() } }}
+                </span>
+                <div class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    class="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-slate-500 dark:hover:bg-slate-700"
+                    [disabled]="linesPage() === 1"
+                    (click)="linesPage.set(linesPage() - 1)"
+                  >
+                    <i class="pi pi-angle-left text-xs"></i>
+                  </button>
+                  <button
+                    type="button"
+                    class="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent dark:text-slate-500 dark:hover:bg-slate-700"
+                    [disabled]="linesPage() === linesTotalPages()"
+                    (click)="linesPage.set(linesPage() + 1)"
+                  >
+                    <i class="pi pi-angle-right text-xs"></i>
+                  </button>
+                </div>
+              </footer>
+            }
           }
         </section>
       }
@@ -161,22 +207,41 @@ import { FileDownloadService } from '../../shared/services/file-download.service
 export class ReportsComponent implements OnInit {
   private readonly api = inject(ReportApiService);
   private readonly userApi = inject(UserApiService);
+  private readonly auth = inject(AuthService);
   private readonly downloads = inject(FileDownloadService);
   readonly debtors = signal<Debtor[]>([]);
   readonly report = signal<DueReport | null>(null);
-  readonly loading = signal(true);
+  readonly loading = signal(false);
   readonly loadError = signal(false);
   readonly downloading = signal(false);
-  selectedDebtor = '__all';
+  readonly canFilterByDebtor = computed(() => this.auth.currentUser()?.role === 'CREDITOR');
+  private readonly pageSize = 10;
+  readonly linesPage = signal(1);
+  readonly linesTotalPages = computed(() => Math.max(1, Math.ceil((this.report()?.lines.length ?? 0) / this.pageSize)));
+  readonly pagedLines = computed(() => {
+    const lines = this.report()?.lines ?? [];
+    const start = (this.linesPage() - 1) * this.pageSize;
+    return lines.slice(start, start + this.pageSize);
+  });
+  selectedDebtor = '';
 
   ngOnInit(): void {
-    this.userApi.getDebtors().subscribe({ next: (rows) => this.debtors.set(rows), error: () => this.debtors.set([]) });
+    if (this.canFilterByDebtor()) {
+      this.userApi
+        .getDebtors()
+        .subscribe({ next: (rows) => this.debtors.set(rows), error: () => this.debtors.set([]) });
+      return;
+    }
+    this.selectedDebtor = '__all';
     this.load();
   }
 
   load(): void {
-    this.loading.set(true);
+    this.report.set(null);
     this.loadError.set(false);
+    this.linesPage.set(1);
+    if (!this.selectedDebtor) return;
+    this.loading.set(true);
     this.api
       .getDueReport(this.selectedDebtor)
       .pipe(finalize(() => this.loading.set(false)))

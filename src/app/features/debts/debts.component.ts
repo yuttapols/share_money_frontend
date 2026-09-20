@@ -1,7 +1,7 @@
 import { DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
 import { CreateDebtRequest, DebtMethod, DebtSummary } from '../../core/models/debt.model';
@@ -15,10 +15,10 @@ import { AppDialogComponent } from '../../shared/components/app-dialog/app-dialo
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { SweetAlertService } from '../../shared/services/sweet-alert.service';
+import { currencyAmountValidators } from '../../shared/utils/validators.util';
 
 @Component({
   selector: 'app-debts',
-  standalone: true,
   imports: [
     ReactiveFormsModule,
     RouterLink,
@@ -32,17 +32,19 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
   template: `
     <header class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h1 class="m-0 text-2xl font-bold text-slate-800">{{ 'debts.title' | translate }}</h1>
-        <p class="mb-0 mt-1 text-sm text-slate-500">{{ 'debts.description' | translate }}</p>
+        <h1 class="m-0 text-base font-bold text-slate-800 dark:text-slate-100">{{ 'debts.title' | translate }}</h1>
+        <p class="mb-0 mt-1 text-sm text-slate-500 dark:text-slate-400">{{ 'debts.description' | translate }}</p>
       </div>
       @if (canManage()) {
         <app-button icon="pi-plus" (pressed)="openCreate()">{{ 'debts.add' | translate }}</app-button>
       }
     </header>
 
-    <section class="mt-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:grid-cols-2">
+    <section
+      class="mt-5 grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:grid-cols-2"
+    >
       <div class="relative">
-        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></span>
+        <span class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500"></span>
         <input
           type="search"
           maxlength="50"
@@ -61,14 +63,22 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       }
     </section>
 
-    @if (loading()) {
+    @if (canManage() && !hasSelectedFilter()) {
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
+        <app-empty-state
+          icon="pi-users"
+          [title]="'debts.chooseDebtor' | translate"
+          [message]="'debts.chooseDebtorDescription' | translate"
+        />
+      </div>
+    } @else if (loading()) {
       <section class="mt-5 grid gap-4 lg:grid-cols-2">
         @for (row of [1, 2, 3, 4]; track row) {
-          <div class="h-44 animate-pulse rounded-2xl bg-slate-200"></div>
+          <div class="h-44 animate-pulse rounded-2xl bg-slate-200 dark:bg-slate-700"></div>
         }
       </section>
     } @else if (loadError()) {
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white">
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <app-error-state
           [title]="'errors.unexpected' | translate"
           [retryLabel]="'common.retry' | translate"
@@ -76,7 +86,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
         />
       </div>
     } @else if (debts().length === 0) {
-      <div class="mt-5 rounded-2xl border border-slate-200 bg-white">
+      <div class="mt-5 rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800">
         <app-empty-state
           icon="pi-receipt"
           [title]="'debts.empty' | translate"
@@ -86,61 +96,108 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
         />
       </div>
     } @else {
-      <section class="mt-5 grid gap-4 lg:grid-cols-2">
-        @for (debt of debts(); track debt.id) {
-          <article
-            class="debt-card"
-            [class.dragging]="draggedId() === debt.id"
-            [attr.draggable]="canManage()"
-            (dragstart)="dragStart(debt.id)"
-            (dragover)="dragOver($event)"
-            (drop)="dropOn(debt.id)"
-            (dragend)="draggedId.set(null)"
-          >
-            <div class="flex items-start gap-3">
-              @if (canManage()) {
-                <span class="pi pi-bars drag-handle"></span>
+      <section
+        class="mt-5 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800"
+      >
+        <div class="overflow-x-auto">
+          <table class="w-full min-w-[54rem] border-collapse text-left">
+            <thead>
+              <tr
+                class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500 dark:bg-slate-800/50 dark:text-slate-400"
+              >
+                @if (canManage()) {
+                  <th class="w-10 px-3 py-3"></th>
+                }
+                <th class="px-5 py-3 font-semibold">{{ 'debts.debtTitle' | translate }}</th>
+                <th class="px-5 py-3 font-semibold">{{ 'debts.debtor' | translate }}</th>
+                <th class="px-5 py-3 font-semibold">{{ 'debts.method' | translate }}</th>
+                <th class="px-5 py-3 font-semibold">{{ 'debts.status' | translate }}</th>
+                <th class="px-5 py-3 text-right font-semibold">{{ 'debts.totalAmount' | translate }}</th>
+                <th class="px-5 py-3 text-right font-semibold">{{ 'debts.paidAmount' | translate }}</th>
+                <th class="px-5 py-3 text-right font-semibold">{{ 'debts.dueAmount' | translate }}</th>
+                <th class="px-5 py-3 text-right font-semibold">{{ 'debts.actions' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (debt of pagedDebts(); track debt.id) {
+                <tr
+                  class="border-t border-slate-200 hover:bg-slate-50/70 dark:border-slate-700 dark:hover:bg-slate-800/50"
+                  [class.dragging]="draggedId() === debt.id"
+                  [attr.draggable]="canManage()"
+                  (dragstart)="dragStart(debt.id)"
+                  (dragover)="dragOver($event)"
+                  (drop)="dropOn(debt.id)"
+                  (dragend)="draggedId.set(null)"
+                >
+                  @if (canManage()) {
+                    <td class="px-3 py-3"><span class="pi pi-bars drag-handle"></span></td>
+                  }
+                  <td class="px-5 py-3">
+                    <strong class="text-sm text-slate-800 dark:text-slate-100">{{ debt.title }}</strong>
+                  </td>
+                  <td class="px-5 py-3 text-sm text-slate-600 dark:text-slate-300">{{ debt.debtorUsername }}</td>
+                  <td class="px-5 py-3">
+                    <span [class]="'method ' + debt.method.toLowerCase()">{{
+                      'debtMethod.' + debt.method | translate
+                    }}</span>
+                  </td>
+                  <td class="px-5 py-3">
+                    <span [class]="'status ' + debt.status.toLowerCase()">{{
+                      'debtStatus.' + debt.status | translate
+                    }}</span>
+                  </td>
+                  <td class="px-5 py-3 text-right text-sm text-slate-600 dark:text-slate-300">
+                    ฿{{ debt.amount | number: '1.2-2' }}
+                  </td>
+                  <td class="px-5 py-3 text-right text-sm text-slate-600 dark:text-slate-300">
+                    ฿{{ debt.paidAmount | number: '1.2-2' }}
+                  </td>
+                  <td class="px-5 py-3 text-right text-sm font-semibold text-red-600">
+                    ฿{{ debt.dueAmount | number: '1.2-2' }}
+                  </td>
+                  <td class="px-5 py-3">
+                    <div class="flex items-center justify-end gap-1">
+                      <a
+                        class="view-link"
+                        [routerLink]="['/debts', debt.id]"
+                        [queryParams]="{ debtor: debtorFilter() || null }"
+                        >{{ 'common.viewDetails' | translate }}</a
+                      >
+                      @if (canManage()) {
+                        <button
+                          type="button"
+                          class="icon-action delete"
+                          [disabled]="deletingId() === debt.id"
+                          (click)="deleteDebt(debt)"
+                        >
+                          <span [class]="deletingId() === debt.id ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
               }
-              <div class="min-w-0 flex-1">
-                <div class="flex flex-wrap items-center gap-2">
-                  <h2>{{ debt.title }}</h2>
-                  <span [class]="'method ' + debt.method.toLowerCase()">{{
-                    'debtMethod.' + debt.method | translate
-                  }}</span>
-                  <span [class]="'status ' + debt.status.toLowerCase()">{{
-                    'debtStatus.' + debt.status | translate
-                  }}</span>
-                </div>
-                <p>{{ debt.debtorUsername }}</p>
-              </div>
-              @if (canManage()) {
-                <button type="button" class="delete" [disabled]="deletingId() === debt.id" (click)="deleteDebt(debt)">
-                  <span [class]="deletingId() === debt.id ? 'pi pi-spin pi-spinner' : 'pi pi-trash'"></span>
-                </button>
-              }
-            </div>
-            <div class="amount-grid">
-              <div>
-                <span>{{ 'debts.totalAmount' | translate }}</span
-                ><strong>฿{{ debt.amount | number: '1.2-2' }}</strong>
-              </div>
-              <div>
-                <span>{{ 'debts.paidAmount' | translate }}</span
-                ><strong>฿{{ debt.paidAmount | number: '1.2-2' }}</strong>
-              </div>
-              <div>
-                <span>{{ 'debts.dueAmount' | translate }}</span
-                ><strong class="due">฿{{ debt.dueAmount | number: '1.2-2' }}</strong>
-              </div>
-            </div>
-            <footer>
-              <span>{{ debt.dueLabel }}</span
-              ><a [routerLink]="['/debts', debt.id]"
-                >{{ 'common.viewDetails' | translate }} <i class="pi pi-arrow-right"></i
-              ></a>
-            </footer>
-          </article>
-        }
+            </tbody>
+          </table>
+        </div>
+        <footer class="flex items-center justify-between border-t border-slate-200 px-5 py-3 dark:border-slate-700">
+          <span class="text-xs text-slate-500 dark:text-slate-400">
+            {{ 'common.pageOf' | translate: { current: page(), total: totalPages() } }}
+          </span>
+          <div class="flex gap-1">
+            <button type="button" class="page-button" [disabled]="page() === 1" (click)="setPage(page() - 1)">
+              <span class="pi pi-angle-left"></span>
+            </button>
+            <button
+              type="button"
+              class="page-button"
+              [disabled]="page() === totalPages()"
+              (click)="setPage(page() + 1)"
+            >
+              <span class="pi pi-angle-right"></span>
+            </button>
+          </div>
+        </footer>
       </section>
       @if (reordering()) {
         <div class="saving-order"><span class="pi pi-spin pi-spinner"></span>{{ 'debts.savingOrder' | translate }}</div>
@@ -164,16 +221,6 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
           </select>
         </div>
         <div class="field">
-          <label>{{ 'debts.method' | translate }} <b>*</b></label>
-          <div class="method-picker">
-            <button type="button" [class.active]="method() === 'INSTALLMENT'" (click)="setMethod('INSTALLMENT')">
-              {{ 'debtMethod.INSTALLMENT' | translate }}</button
-            ><button type="button" [class.active]="method() === 'OPEN'" (click)="setMethod('OPEN')">
-              {{ 'debtMethod.OPEN' | translate }}
-            </button>
-          </div>
-        </div>
-        <div class="field">
           <label>{{ 'debts.debtTitle' | translate }} <b>*</b></label
           ><input type="text" formControlName="title" maxlength="200" />
         </div>
@@ -184,8 +231,18 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
           </div>
         }
         <div class="field">
+          <label>{{ 'debts.method' | translate }} <b>*</b></label>
+          <div class="method-picker">
+            <button type="button" [class.active]="method() === 'INSTALLMENT'" (click)="setMethod('INSTALLMENT')">
+              {{ 'debtMethod.INSTALLMENT' | translate }}</button
+            ><button type="button" [class.active]="method() === 'OPEN'" (click)="setMethod('OPEN')">
+              {{ 'debtMethod.OPEN' | translate }}
+            </button>
+          </div>
+        </div>
+        <div class="field">
           <label>{{ 'debts.startDate' | translate }} <b>*</b></label
-          ><input type="date" formControlName="startDate" [max]="today" />
+          ><input type="date" formControlName="startDate" />
         </div>
         @if (method() === 'INSTALLMENT') {
           <div class="two-columns">
@@ -229,51 +286,31 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     section select {
       width: 100%;
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.8rem;
-      background: #fff;
-      color: #1e293b;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
       outline: 0;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+    }
+    section input:focus,
+    section select:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     section input {
       padding-left: 2.5rem;
     }
-    .debt-card {
-      display: grid;
-      gap: 1rem;
-      border: 1px solid #e2e8f0;
-      border-top: 4px solid #60a5fa;
-      border-radius: 1rem;
-      padding: 1.25rem;
-      background: #fff;
-      box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
-      transition:
-        opacity 0.15s,
-        transform 0.15s;
-    }
-    .debt-card.dragging {
+    tr.dragging {
       opacity: 0.5;
-      transform: scale(0.98);
-    }
-    h2,
-    p {
-      margin: 0;
-    }
-    h2 {
-      color: #1e293b;
-      font-size: 1rem;
-    }
-    p {
-      margin-top: 0.25rem;
-      color: #64748b;
-      font-size: 0.75rem;
     }
     .drag-handle {
-      color: #94a3b8;
+      color: var(--color-text-muted);
       cursor: grab;
-      padding-top: 0.2rem;
     }
     .method,
     .status {
@@ -283,7 +320,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       font-weight: 750;
     }
     .method.installment {
-      background: #eff6ff;
+      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
       color: #2563eb;
     }
     .method.open {
@@ -291,8 +328,8 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       color: #7c3aed;
     }
     .method.full {
-      background: #f8fafc;
-      color: #475569;
+      background: var(--color-surface-muted);
+      color: var(--color-text-secondary);
     }
     .status.pending {
       background: #fff7ed;
@@ -306,51 +343,41 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       background: #ecfdf5;
       color: #059669;
     }
-    .delete {
-      width: 2rem;
-      height: 2rem;
+    .icon-action,
+    .page-button {
+      width: 2.25rem;
+      height: 2.25rem;
       display: grid;
       place-items: center;
       border: 0;
-      border-radius: 0.55rem;
-      background: #fef2f2;
-      color: #dc2626;
+      border-radius: 0.6rem;
+      background: transparent;
       cursor: pointer;
     }
-    .amount-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.75rem;
-    }
-    .amount-grid div {
-      display: grid;
-      gap: 0.2rem;
-    }
-    .amount-grid span {
-      color: #64748b;
-      font-size: 0.68rem;
-    }
-    .amount-grid strong {
-      color: #334155;
-      font-size: 0.9rem;
-    }
-    .amount-grid .due {
+    .icon-action.delete {
       color: #dc2626;
     }
-    .debt-card footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      border-top: 1px solid #f1f5f9;
-      padding-top: 0.85rem;
-      color: #64748b;
-      font-size: 0.75rem;
+    .icon-action.delete:hover {
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
     }
-    footer a {
+    .icon-action.delete:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+    .page-button {
+      border: var(--border-width) solid var(--border-color);
+      color: var(--color-text-secondary);
+    }
+    .page-button:disabled {
+      cursor: not-allowed;
+      opacity: 0.35;
+    }
+    .view-link {
       color: #2563eb;
       font-weight: 700;
+      font-size: 0.8rem;
       text-decoration: none;
+      white-space: nowrap;
     }
     .saving-order {
       position: fixed;
@@ -376,7 +403,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       gap: 0.4rem;
     }
     .field label {
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.8rem;
       font-weight: 650;
     }
@@ -388,14 +415,23 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     .field textarea {
       width: 100%;
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0.65rem 0.8rem;
-      background: #fff;
-      color: #1e293b;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
       outline: 0;
       box-sizing: border-box;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+    }
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     .two-columns {
       display: grid;
@@ -409,21 +445,20 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     .method-picker button {
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
+      border: var(--border-width) solid var(--border-color);
       border-radius: 0.7rem;
-      background: #fff;
-      color: #64748b;
+      background: var(--color-surface);
+      color: var(--color-text-secondary);
       font: inherit;
       cursor: pointer;
     }
     .method-picker button.active {
       border-color: #2563eb;
-      background: #eff6ff;
+      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
       color: #1d4ed8;
       font-weight: 700;
     }
     @media (max-width: 520px) {
-      .amount-grid,
       .two-columns {
         grid-template-columns: 1fr;
       }
@@ -438,9 +473,13 @@ export class DebtsComponent implements OnInit, OnDestroy {
   private readonly adminApi = inject(AdminApiService);
   private readonly auth = inject(AuthService);
   private readonly alerts = inject(SweetAlertService);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private searchTimer?: ReturnType<typeof setTimeout>;
   private previousOrder: DebtSummary[] = [];
+  private readonly pageSize = 10;
   readonly today = new Date().toISOString().slice(0, 10);
+  readonly page = signal(1);
   readonly debts = signal<DebtSummary[]>([]);
   readonly debtors = signal<Debtor[]>([]);
   readonly installmentChoices = signal<number[]>([]);
@@ -448,6 +487,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
   readonly loadError = signal(false);
   readonly search = signal('');
   readonly debtorFilter = signal('');
+  readonly hasSelectedFilter = signal(false);
   readonly dialogOpen = signal(false);
   readonly creating = signal(false);
   readonly deletingId = signal<number | null>(null);
@@ -455,25 +495,45 @@ export class DebtsComponent implements OnInit, OnDestroy {
   readonly reordering = signal(false);
   readonly method = signal<DebtMethod>('INSTALLMENT');
   readonly canManage = computed(() => this.auth.currentUser()?.role === 'CREDITOR');
+  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.debts().length / this.pageSize)));
+  readonly pagedDebts = computed(() => {
+    const start = (this.page() - 1) * this.pageSize;
+    return this.debts().slice(start, start + this.pageSize);
+  });
   readonly form = this.fb.nonNullable.group({
     debtorUsername: ['', Validators.required],
     title: ['', [Validators.required, Validators.maxLength(200)]],
     description: ['', Validators.maxLength(1000)],
     startDate: ['', Validators.required],
     installmentCount: [0, Validators.min(1)],
-    installmentAmount: [0, [Validators.required, Validators.min(0.01), Validators.max(9999999.99)]],
+    installmentAmount: [0, currencyAmountValidators()],
     principal: [0]
   });
 
   ngOnInit(): void {
-    this.load();
     if (this.canManage()) {
-      this.userApi
-        .getDebtors()
-        .subscribe({ next: (rows) => this.debtors.set(rows), error: () => this.debtors.set([]) });
+      const restoredDebtor = this.route.snapshot.queryParamMap.get('debtor');
+      if (restoredDebtor) {
+        this.debtorFilter.set(restoredDebtor);
+        this.hasSelectedFilter.set(true);
+        this.load();
+      }
+      this.userApi.getDebtors().subscribe({
+        next: (rows) => {
+          this.debtors.set(rows);
+          if (restoredDebtor) {
+            this.debtorFilter.set('');
+            setTimeout(() => this.debtorFilter.set(restoredDebtor));
+          }
+        },
+        error: () => this.debtors.set([])
+      });
       this.adminApi
         .getInstallmentChoices()
         .subscribe({ next: (rows) => this.installmentChoices.set(rows), error: () => this.installmentChoices.set([]) });
+      this.loading.set(false);
+    } else {
+      this.load();
     }
   }
   ngOnDestroy(): void {
@@ -485,21 +545,39 @@ export class DebtsComponent implements OnInit, OnDestroy {
     this.api
       .getAll(this.debtorFilter(), this.search())
       .pipe(finalize(() => this.loading.set(false)))
-      .subscribe({ next: (rows) => this.debts.set(rows), error: () => this.loadError.set(true) });
+      .subscribe({
+        next: (rows) => {
+          this.debts.set(rows);
+          this.page.set(1);
+        },
+        error: () => this.loadError.set(true)
+      });
+  }
+  setPage(page: number): void {
+    this.page.set(Math.min(Math.max(1, page), this.totalPages()));
   }
   searchChanged(event: Event): void {
     this.search.set((event.target as HTMLInputElement).value.slice(0, 50));
+    this.hasSelectedFilter.set(true);
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.searchTimer = setTimeout(() => this.load(), 350);
   }
   filterChanged(event: Event): void {
-    this.debtorFilter.set((event.target as HTMLSelectElement).value);
-    this.load();
+    const value = (event.target as HTMLSelectElement).value;
+    this.debtorFilter.set(value);
+    this.hasSelectedFilter.set(Boolean(value));
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: { debtor: value || null },
+      queryParamsHandling: 'merge',
+      replaceUrl: true
+    });
+    if (value) this.load();
   }
   openCreate(): void {
     if (!this.canManage()) return;
     this.form.reset({
-      debtorUsername: '',
+      debtorUsername: this.debtorFilter(),
       title: '',
       description: '',
       startDate: this.today,
@@ -518,7 +596,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
     const principal = this.form.controls.principal;
     const count = this.form.controls.installmentCount;
     if (method === 'OPEN') {
-      principal.setValidators([Validators.required, Validators.min(0.01), Validators.max(9999999.99)]);
+      principal.setValidators(currencyAmountValidators());
       count.clearValidators();
     } else {
       principal.clearValidators();
@@ -566,6 +644,7 @@ export class DebtsComponent implements OnInit, OnDestroy {
     if (this.deletingId() !== null) return;
     const confirmed = await this.alerts.confirm({
       titleKey: 'debts.deleteTitle',
+      titleParams: { title: debt.title },
       textKey: 'debts.deleteDescription',
       confirmButtonKey: 'common.delete',
       cancelButtonKey: 'common.cancel'

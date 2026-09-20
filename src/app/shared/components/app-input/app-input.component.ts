@@ -35,7 +35,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     label {
       display: block;
       margin: 0 0 0.4rem;
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.86rem;
       font-weight: 650;
     }
@@ -47,20 +47,23 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
       display: flex;
       align-items: center;
       gap: 0.65rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.8rem;
-      background: #fff;
+      background: var(--color-surface);
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
     }
     .field:focus-within {
-      border-color: #2563eb;
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     .field--invalid {
       border-color: #dc2626;
     }
     .field .pi {
-      color: #94a3b8;
+      color: var(--color-text-muted);
     }
     .field input {
       flex: 1;
@@ -72,7 +75,7 @@ import { ControlValueAccessor, NG_VALUE_ACCESSOR } from '@angular/forms';
     }
     .field input:disabled {
       cursor: not-allowed;
-      color: #64748b;
+      color: var(--color-text-secondary);
     }
     small {
       display: block;

@@ -11,10 +11,10 @@ import { AppButtonComponent } from '../../shared/components/app-button/app-butto
 import { AppDialogComponent } from '../../shared/components/app-dialog/app-dialog.component';
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { SweetAlertService } from '../../shared/services/sweet-alert.service';
+import { currencyAmountValidators } from '../../shared/utils/validators.util';
 
 @Component({
   selector: 'app-debt-detail',
-  standalone: true,
   imports: [
     ReactiveFormsModule,
     RouterLink,
@@ -26,7 +26,9 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     ErrorStateComponent
   ],
   template: `
-    <a routerLink="/debts" class="back"><span class="pi pi-arrow-left"></span>{{ 'debts.backToList' | translate }}</a>
+    <a routerLink="/debts" [queryParams]="backQueryParams" class="back"
+      ><span class="pi pi-arrow-left"></span>{{ 'debts.backToList' | translate }}</a
+    >
     @if (loading()) {
       <div class="loading"><span class="pi pi-spin pi-spinner"></span></div>
     } @else if (loadError()) {
@@ -48,12 +50,14 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
               }}</span>
             </div>
             <h1>{{ current.title }}</h1>
-            <p>{{ current.description }}</p>
           </div>
           @if (canManage() && current.method === 'FULL') {
-            <app-button [loading]="actionKey() === 'full'" (pressed)="toggleFullPaid(current)">{{
-              (current.status === 'PAID' ? 'debts.cancelPayment' : 'debts.markFullPaid') | translate
-            }}</app-button>
+            <app-button
+              [variant]="current.status === 'PAID' ? 'danger' : 'primary'"
+              [loading]="actionKey() === 'full'"
+              (pressed)="toggleFullPaid(current)"
+              >{{ (current.status === 'PAID' ? 'debts.cancelPayment' : 'debts.markFullPaid') | translate }}</app-button
+            >
           }
         </header>
         <section class="summary-grid">
@@ -63,12 +67,25 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
           </article>
           <article>
             <span>{{ 'debts.remainingAmount' | translate }}</span
-            ><strong>฿{{ current.amount - current.paidAmount | number: '1.2-2' }}</strong>
+            ><strong>฿{{ remainingAmount() | number: '1.2-2' }}</strong>
           </article>
-          <article>
-            <span>{{ 'debts.startDate' | translate }}</span
-            ><strong>{{ current.startDate | date: 'd MMM y' }}</strong>
-          </article>
+          @if (current.method === 'OPEN' || current.method === 'INSTALLMENT') {
+            <article>
+              <span>{{ 'debts.nextDueDate' | translate }}</span
+              ><strong>{{ nextDueDate() | date: 'd MMM y' }}</strong>
+            </article>
+          } @else {
+            <article>
+              <span>{{ 'debts.startDate' | translate }}</span
+              ><strong>{{ current.startDate | date: 'd MMM y' }}</strong>
+            </article>
+          }
+          @if (current.method === 'OPEN' && currentDueRecord(); as due) {
+            <article [class.paid]="due.status === 'PAID'">
+              <span>{{ 'debts.dueAmount' | translate }}</span
+              ><strong>฿{{ due.totalPaid | number: '1.2-2' }}</strong>
+            </article>
+          }
         </section>
 
         @if (current.method === 'INSTALLMENT') {
@@ -107,7 +124,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
                         @if (canManage()) {
                           <button
                             type="button"
-                            class="pay"
+                            [class]="row.status === 'PAID' ? 'pay pay--cancel' : 'pay'"
                             [disabled]="actionKey() !== ''"
                             (click)="payInstallment(row)"
                           >
@@ -274,7 +291,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       display: inline-flex;
       align-items: center;
       gap: 0.45rem;
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.8rem;
       font-weight: 650;
       text-decoration: none;
@@ -286,7 +303,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       place-items: center;
       margin-top: 1rem;
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
       color: #2563eb;
     }
     .detail-header {
@@ -303,12 +320,8 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     h1 {
       margin-top: 0.5rem;
-      color: #1e293b;
-      font-size: 1.8rem;
-    }
-    .detail-header p {
-      margin-top: 0.3rem;
-      color: #64748b;
+      color: var(--color-text-primary);
+      font-size: var(--font-size-heading);
     }
     .badges {
       display: flex;
@@ -324,7 +337,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       font-weight: 750;
     }
     .method {
-      background: #eff6ff;
+      background: color-mix(in srgb, #2563eb 12%, var(--color-surface));
       color: #2563eb;
     }
     .status.pending,
@@ -343,33 +356,36 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     .summary-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
       gap: 1rem;
       margin-top: 1.25rem;
     }
     .summary-grid article {
       display: grid;
       gap: 0.35rem;
-      border: 1px solid #e2e8f0;
+      border: var(--border-width) solid var(--border-color);
       border-top: 4px solid #93c5fd;
       border-radius: 1rem;
       padding: 1rem;
-      background: #fff;
+      background: var(--color-surface);
+    }
+    .summary-grid article.paid {
+      border-top-color: #34d399;
     }
     .summary-grid span {
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.7rem;
     }
     .summary-grid strong {
-      color: #1e293b;
+      color: var(--color-text-primary);
       font-size: 1rem;
     }
     .table-card {
       margin-top: 1.25rem;
       overflow: hidden;
-      border: 1px solid #e2e8f0;
+      border: var(--border-width) solid var(--border-color);
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
     }
     .table-card > header {
       display: flex;
@@ -379,12 +395,12 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       padding: 1.15rem;
     }
     .table-card h2 {
-      color: #1e293b;
+      color: var(--color-text-primary);
       font-size: 1rem;
     }
     .table-card header p {
       margin-top: 0.25rem;
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.72rem;
     }
     .table-wrap {
@@ -397,18 +413,18 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     th,
     td {
-      border-top: 1px solid #f1f5f9;
+      border-top: 1px solid var(--border-color);
       padding: 0.75rem 1rem;
       text-align: left;
       font-size: 0.76rem;
     }
     th {
-      background: #f8fafc;
-      color: #64748b;
+      background: var(--color-surface-muted);
+      color: var(--color-text-secondary);
       font-weight: 700;
     }
     td {
-      color: #475569;
+      color: var(--color-text-secondary);
     }
     .right {
       text-align: right;
@@ -431,8 +447,12 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
       cursor: pointer;
     }
     .pay {
-      background: #eff6ff;
-      color: #2563eb;
+      background: #16a34a;
+      color: #fff;
+    }
+    .pay.pay--cancel {
+      background: #dc2626;
+      color: #fff;
     }
     .interest {
       margin-left: 0.35rem;
@@ -441,7 +461,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     .delete {
       margin-left: 0.35rem;
-      background: #fef2f2;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
       color: #dc2626;
     }
     button:disabled {
@@ -455,7 +475,7 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     }
     .dialog-form label {
       margin-top: 0.4rem;
-      color: #334155;
+      color: var(--color-text-primary);
       font-size: 0.8rem;
       font-weight: 650;
     }
@@ -465,12 +485,20 @@ import { SweetAlertService } from '../../shared/services/sweet-alert.service';
     .dialog-form input,
     .dialog-form select {
       min-height: 2.75rem;
-      border: 1px solid #d9e0e9;
-      border-radius: 0.7rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--input-radius);
       padding: 0 0.8rem;
-      background: #fff;
-      color: #1e293b;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
+      transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+    }
+    .dialog-form input:focus,
+    .dialog-form select:focus {
+      border-color: var(--input-focus-border);
+      box-shadow: var(--input-focus-ring);
     }
     .dialog-actions {
       display: flex;
@@ -501,6 +529,7 @@ export class DebtDetailComponent implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly alerts = inject(SweetAlertService);
   private readonly id = Number(this.route.snapshot.paramMap.get('id'));
+  readonly backQueryParams = { debtor: this.route.snapshot.queryParamMap.get('debtor') || null };
   private paymentAction: 'pay' | 'interest' | 'full' = 'pay';
   private selectedInstallment: Installment | null = null;
   readonly today = new Date().toISOString().slice(0, 10);
@@ -512,12 +541,76 @@ export class DebtDetailComponent implements OnInit {
   readonly recordDialog = signal(false);
   readonly editingRecord = signal<OpenLoanRecord | null>(null);
   readonly canManage = computed(() => this.auth.currentUser()?.role === 'CREDITOR');
+  readonly paidAmount = computed(() => {
+    const current = this.debt();
+    if (!current) return 0;
+    if (current.method === 'OPEN') {
+      return (current.openRecords ?? [])
+        .filter((row) => row.status === 'PAID')
+        .reduce((sum, row) => sum + row.totalPaid, 0);
+    }
+    return current.paidAmount;
+  });
+  readonly remainingAmount = computed(() => {
+    const current = this.debt();
+    if (!current) return 0;
+    if (current.method === 'OPEN') {
+      const records = current.openRecords ?? [];
+      const latest = records[records.length - 1];
+      if (latest) return latest.remainingPrincipal;
+    }
+    return current.amount - this.paidAmount();
+  });
+  readonly nextDueDate = computed(() => {
+    const current = this.debt();
+    if (!current) return null;
+    if (current.method === 'OPEN') {
+      const paidRecords = (current.openRecords ?? []).filter((row) => row.status === 'PAID');
+      if (paidRecords.length === 0) return current.startDate;
+      const latestPayDate = paidRecords.reduce(
+        (latest, row) => (row.payDate > latest ? row.payDate : latest),
+        paidRecords[0].payDate
+      );
+      return this.addMonth(latestPayDate);
+    }
+    if (current.method === 'INSTALLMENT') {
+      const paidInstallments = (current.installments ?? []).filter((row) => row.status === 'PAID');
+      if (paidInstallments.length === 0) return current.startDate;
+      const latestPayDate = paidInstallments.reduce((latest, row) => {
+        const date = row.payDate ?? row.dueDate;
+        return date > latest ? date : latest;
+      }, paidInstallments[0].payDate ?? paidInstallments[0].dueDate);
+      return this.addMonth(latestPayDate);
+    }
+    return current.startDate;
+  });
+  readonly currentDueRecord = computed(() => {
+    const current = this.debt();
+    if (!current || current.method !== 'OPEN') return null;
+    const records = current.openRecords ?? [];
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth();
+    return (
+      records.find((row) => {
+        const payDate = new Date(row.payDate);
+        const monthsAhead = (payDate.getFullYear() - currentYear) * 12 + (payDate.getMonth() - currentMonth);
+        if (monthsAhead === 0) return true;
+        return monthsAhead === 1 && payDate.getDate() <= 5;
+      }) ?? null
+    );
+  });
+  private addMonth(dateStr: string): Date {
+    const next = new Date(dateStr);
+    next.setMonth(next.getMonth() + 1);
+    return next;
+  }
   readonly paymentForm = this.fb.nonNullable.group({ payDate: [this.today, Validators.required] });
   readonly recordForm = this.fb.nonNullable.group({
     payDate: [this.today, Validators.required],
-    interest: [0, [Validators.required, Validators.min(0), Validators.max(9999999.99)]],
-    remainingPrincipal: [0, [Validators.required, Validators.min(0), Validators.max(9999999.99)]],
-    totalPaid: [0, [Validators.required, Validators.min(0), Validators.max(9999999.99)]],
+    interest: [0, currencyAmountValidators(0)],
+    remainingPrincipal: [0, currencyAmountValidators(0)],
+    totalPaid: [0, currencyAmountValidators(0)],
     status: ['UNPAID' as 'UNPAID' | 'PAID', Validators.required]
   });
   ngOnInit(): void {

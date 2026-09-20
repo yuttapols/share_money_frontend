@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { TranslatePipe } from '@ngx-translate/core';
-import { finalize } from 'rxjs';
+import { finalize, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/services/auth.service';
 import { ProfileApiService } from '../../../core/services/profile-api.service';
 import { AppButtonComponent } from '../../../shared/components/app-button/app-button.component';
@@ -9,7 +9,6 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
 
 @Component({
   selector: 'app-avatar-card',
-  standalone: true,
   imports: [TranslatePipe, AppButtonComponent],
   template: `
     <section class="avatar-card">
@@ -56,10 +55,10 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
   `,
   styles: `
     .avatar-card {
-      border: 1px solid #e8edf3;
+      border: var(--border-width) solid var(--border-color);
       border-top: 4px solid #8b5cf6;
       border-radius: 1rem;
-      background: #fff;
+      background: var(--color-surface);
       overflow: hidden;
     }
     .avatar-card > header {
@@ -68,12 +67,12 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
     }
     .avatar-card h2 {
       margin: 0;
-      color: #1e293b;
+      color: var(--color-text-primary);
       font-size: 1rem;
     }
     .avatar-card header p {
       margin: 0.3rem 0 0;
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.78rem;
     }
     .avatar-content {
@@ -117,11 +116,11 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
       display: flex;
       align-items: center;
       gap: 0.45rem;
-      border: 1px solid #d9e0e9;
+      border: var(--border-width) solid var(--border-color);
       border-radius: 0.65rem;
       padding: 0.55rem 0.75rem;
-      background: #fff;
-      color: #334155;
+      background: var(--color-surface);
+      color: var(--color-text-primary);
       font: inherit;
       font-size: 0.82rem;
       font-weight: 650;
@@ -134,7 +133,7 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
       border: 0;
       border-radius: 0.6rem;
       padding: 0.55rem 0.75rem;
-      background: #fef2f2;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
       color: #dc2626;
       font: inherit;
       font-size: 0.78rem;
@@ -151,7 +150,7 @@ import { IMAGE_FILE_ACCEPT, isAllowedImageFile } from '../../../shared/utils/ima
       opacity: 0.6;
     }
     .avatar-actions small {
-      color: #64748b;
+      color: var(--color-text-secondary);
       font-size: 0.7rem;
       line-height: 1.4;
     }
@@ -223,9 +222,13 @@ export class AvatarCardComponent implements OnInit, OnDestroy {
     this.uploading.set(true);
     this.profileApi
       .uploadAvatar(file)
-      .pipe(finalize(() => this.uploading.set(false)))
-      .subscribe((response) => {
-        this.avatarUrl.set(response.avatarUrl);
+      .pipe(
+        switchMap(() => this.profileApi.getMine()),
+        finalize(() => this.uploading.set(false))
+      )
+      .subscribe((profile) => {
+        this.avatarUrl.set(profile.avatarUrl ?? '');
+        this.auth.updateAvatarUrl(profile.avatarUrl);
         this.toast.success('toast.avatarUpdated');
         this.clearSelection();
       });
@@ -239,6 +242,7 @@ export class AvatarCardComponent implements OnInit, OnDestroy {
       .pipe(finalize(() => this.deleting.set(false)))
       .subscribe(() => {
         this.avatarUrl.set('');
+        this.auth.updateAvatarUrl(null);
         this.toast.success('toast.avatarDeleted');
       });
   }
@@ -250,7 +254,10 @@ export class AvatarCardComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.profileApi.getMine().subscribe((profile) => this.avatarUrl.set(profile.avatarUrl ?? ''));
+    this.profileApi.getMine().subscribe((profile) => {
+      this.avatarUrl.set(profile.avatarUrl ?? '');
+      this.auth.updateAvatarUrl(profile.avatarUrl);
+    });
   }
 
   ngOnDestroy(): void {

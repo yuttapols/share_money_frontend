@@ -18,18 +18,18 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       gap: 0.5rem;
       padding: 3rem 1rem;
       text-align: center;
-      color: #64748b;
+      color: var(--color-text-secondary);
     }
     .empty-state > .pi {
       font-size: 2.5rem;
-      color: #94a3b8;
+      color: var(--color-text-muted);
     }
     h3,
     p {
       margin: 0;
     }
     h3 {
-      color: #334155;
+      color: var(--color-text-primary);
     }
     button {
       margin-top: 0.5rem;

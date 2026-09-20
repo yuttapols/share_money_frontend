@@ -37,9 +37,22 @@ export interface DueReport {
   total: number;
 }
 
+export interface Bank {
+  code: string;
+  name: string;
+}
+
 export interface BankAccount {
+  id: number;
   bankName: string;
   accountNo: string;
   accountName: string;
-  paymentNote: string;
+  paymentNote: string | null;
+}
+
+export interface BankAccountRequest {
+  bankName: string;
+  accountNo: string;
+  accountName: string;
+  paymentNote: string | null;
 }

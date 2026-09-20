@@ -1,13 +1,41 @@
-@import 'primeicons/primeicons.css';
+@use 'primeicons/primeicons.css';
+@use '@fontsource-variable/noto-sans-thai';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   color-scheme: light;
-  font-family: Inter, 'Noto Sans Thai', 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'Noto Sans Thai Variable', Inter, 'Segoe UI', Tahoma, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
+  --font-size-body: 0.875rem;
+  --font-size-heading: 1rem;
+  --font-size-modal-title: 1.25rem;
+  --border-color: #cbd5e1;
+  --border-width: 1.5px;
+  --color-bg: #f5f7fb;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f1f5f9;
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #64748b;
+  --color-text-muted: #94a3b8;
+  --color-accent-text: #1d4ed8;
+  --input-radius: 0.75rem;
+  --input-focus-border: #3b82f6;
+  --input-focus-ring: 0 0 0 4px rgba(59, 130, 246, 0.15);
+}
+
+html.dark {
+  color-scheme: dark;
+  --border-color: #334155;
+  --color-bg: #0b1220;
+  --color-surface: #16213a;
+  --color-surface-muted: #1e2b47;
+  --color-text-primary: #f1f5f9;
+  --color-text-secondary: #94a3b8;
+  --color-text-muted: #64748b;
+  --color-accent-text: #60a5fa;
 }
 
 * {
@@ -23,8 +51,12 @@ body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #f5f7fb;
-  color: #1e293b;
+  background: var(--color-bg);
+  color: var(--color-text-primary);
+  font-size: var(--font-size-body);
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 button,
 input,
@@ -49,4 +81,93 @@ input:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.app-confirm-popup.swal2-popup {
+  width: auto;
+  max-width: 26rem;
+  padding: 1.75rem;
+  border-radius: 1.25rem;
+  background: var(--color-surface);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+}
+.app-confirm-popup__icon.swal2-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  margin: 0 auto 0.5rem;
+  border-width: 0;
+  font-size: 2rem;
+}
+.app-confirm-popup .swal2-icon-content {
+  font-size: 2rem;
+}
+.app-confirm-popup .swal2-image {
+  width: 100%;
+  border-radius: 0.85rem;
+  object-fit: cover;
+  margin: 0 0 1rem;
+}
+.app-confirm-popup__title.swal2-title {
+  margin: 0;
+  padding: 0;
+  color: var(--color-text-primary);
+  font-size: var(--font-size-modal-title);
+  font-weight: 700;
+}
+.app-confirm-popup__text.swal2-html-container {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+  line-height: 1.55;
+}
+.app-confirm-popup__checkbox.swal2-checkbox {
+  margin: 1rem auto 0;
+}
+.app-confirm-popup__checkbox.swal2-checkbox input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--input-focus-border);
+}
+.app-confirm-popup__checkbox.swal2-checkbox .swal2-label {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-body);
+}
+.app-confirm-popup__actions.swal2-actions {
+  width: 100%;
+  margin-top: 1.5rem;
+  gap: 0.65rem;
+}
+.app-confirm-popup__btn {
+  flex: 1;
+  margin: 0;
+  border: 0;
+  border-radius: var(--input-radius);
+  padding: 0.65rem 1rem;
+  font: inherit;
+  font-size: var(--font-size-body);
+  font-weight: 650;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+.app-confirm-popup__btn--confirm {
+  background: #2563eb;
+  color: #fff;
+}
+.app-confirm-popup__btn--confirm:hover {
+  background: #1d4ed8;
+}
+.app-confirm-popup__btn--cancel {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  border: var(--border-width) solid var(--border-color);
+}
+.app-confirm-popup__btn--cancel:hover {
+  background: var(--color-surface-muted);
+}
+.app-confirm-popup__close.swal2-close {
+  color: var(--color-text-muted);
+}
+.app-confirm-popup__close.swal2-close:hover {
+  color: var(--color-text-primary);
+  background: transparent;
 }

@@ -22,7 +22,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
       padding: 1rem;
       border: 1px solid #fecaca;
       border-radius: 0.75rem;
-      background: #fef2f2;
+      background: color-mix(in srgb, #dc2626 12%, var(--color-surface));
       color: #991b1b;
     }
     p {

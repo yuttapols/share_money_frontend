@@ -13,7 +13,12 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
     .skeleton {
       display: block;
       border-radius: 0.5rem;
-      background: linear-gradient(90deg, #e8edf4 25%, #f8fafc 50%, #e8edf4 75%);
+      background: linear-gradient(
+        90deg,
+        var(--color-surface-muted) 25%,
+        var(--color-surface) 50%,
+        var(--color-surface-muted) 75%
+      );
       background-size: 200% 100%;
       animation: shimmer 1.5s infinite;
     }

@@ -1,5 +1,9 @@
 # Share Money Frontend Standards
 
+## Communication
+
+- Summarize work and explanations to the user in Thai.
+
 ## Scope
 
 - Work only inside `C:\GIT\FRONT-END\share_money_frontend`.

@@ -20,7 +20,6 @@ const DEFAULT_CODE = 404;
 
 @Component({
   selector: 'app-error-page',
-  standalone: true,
   imports: [RouterLink, TranslatePipe],
   template: `
     <section class="error-page">

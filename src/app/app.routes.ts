@@ -45,13 +45,21 @@ export const routes: Routes = [
         path: 'creditors',
         canActivate: [roleGuard],
         data: { titleKey: 'menu.creditors', roles: ['ADMIN'], adminMode: 'creditors' },
-        loadComponent: () => import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
+        loadComponent: () =>
+          import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
       },
       {
         path: 'documents',
         canActivate: [roleGuard],
-        data: { titleKey: 'menu.documents', roles: ['ADMIN', 'CREDITOR'] },
+        data: { titleKey: 'menu.documents', roles: ['ADMIN', 'CREDITOR', 'DEBTOR'] },
         loadComponent: () => import('./features/documents/documents.component').then((m) => m.DocumentsComponent)
+      },
+      {
+        path: 'bank-accounts',
+        canActivate: [roleGuard],
+        data: { titleKey: 'menu.bankAccount', roles: ['ADMIN', 'CREDITOR', 'DEBTOR'] },
+        loadComponent: () =>
+          import('./features/bank-accounts/bank-accounts.component').then((m) => m.BankAccountsComponent)
       },
       {
         path: 'slips',
@@ -67,25 +75,35 @@ export const routes: Routes = [
         path: 'admin/menus',
         canActivate: [roleGuard],
         data: { titleKey: 'menu.admin.menus', roles: ['ADMIN'], adminMode: 'menus' },
-        loadComponent: () => import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
+        loadComponent: () =>
+          import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
       },
       {
         path: 'admin/installment-choices',
         canActivate: [roleGuard],
         data: { titleKey: 'menu.admin.installments', roles: ['ADMIN'], adminMode: 'installments' },
-        loadComponent: () => import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
+        loadComponent: () =>
+          import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
       },
       {
         path: 'admin/login-logs',
         canActivate: [roleGuard],
         data: { titleKey: 'menu.admin.logs', roles: ['ADMIN'], adminMode: 'logs' },
-        loadComponent: () => import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
+        loadComponent: () =>
+          import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
       },
       {
         path: 'admin/migrations',
         canActivate: [roleGuard],
         data: { titleKey: 'admin.migrationsTitle', roles: ['ADMIN'], adminMode: 'migrations' },
-        loadComponent: () => import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
+        loadComponent: () =>
+          import('./features/admin/admin-management.component').then((m) => m.AdminManagementComponent)
+      },
+      {
+        path: 'admin/import',
+        canActivate: [roleGuard],
+        data: { titleKey: 'menu.admin.import', roles: ['ADMIN'] },
+        loadComponent: () => import('./features/admin/import/import.component').then((m) => m.ImportComponent)
       },
       { path: 'admin/creditors', redirectTo: 'creditors', pathMatch: 'full' },
       {

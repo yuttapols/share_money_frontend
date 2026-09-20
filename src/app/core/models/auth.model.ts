@@ -4,6 +4,7 @@ export interface AuthUser {
   name: string;
   role: UserRole;
   creditorUsername?: string;
+  avatarUrl?: string | null;
 }
 export interface LoginRequest {
   username: string;
