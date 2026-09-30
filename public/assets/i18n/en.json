@@ -128,7 +128,11 @@
     "myPaidAmountTitle": "Paid",
     "myPaidAmountEmpty": "No payments yet",
     "myCreditorCountTitle": "Creditors",
-    "myCreditorCountEmpty": "No creditors yet"
+    "myCreditorCountEmpty": "No creditors yet",
+    "selectDebtorTitle": "Select a debtor",
+    "selectDebtorDescription": "Pick a debtor from the list to see their payment summary",
+    "clearSelectedDebtor": "Clear selected debtor",
+    "itemCount": "{{count}} items"
   },
   "profile": {
     "account": "My account",

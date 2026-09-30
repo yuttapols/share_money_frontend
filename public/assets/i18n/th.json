@@ -128,7 +128,11 @@
     "myPaidAmountTitle": "ยอดที่ชำระแล้ว",
     "myPaidAmountEmpty": "ยังไม่มีการชำระ",
     "myCreditorCountTitle": "จำนวนเจ้าหนี้",
-    "myCreditorCountEmpty": "ยังไม่มีเจ้าหนี้"
+    "myCreditorCountEmpty": "ยังไม่มีเจ้าหนี้",
+    "selectDebtorTitle": "เลือกลูกหนี้",
+    "selectDebtorDescription": "คลิกเลือกลูกหนี้จากรายการด้านซ้ายเพื่อดูสรุปยอดชำระ",
+    "clearSelectedDebtor": "ยกเลิกการเลือกลูกหนี้",
+    "itemCount": "{{count}} รายการ"
   },
   "profile": {
     "account": "บัญชีของฉัน",

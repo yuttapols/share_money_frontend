@@ -1,8 +1,9 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, computed, inject, OnInit, signal } from '@angular/core';
+import { DatePipe, DecimalPipe, NgTemplateOutlet } from '@angular/common';
+import { ChangeDetectionStrategy, Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { AdminApiService } from '../../core/services/admin-api.service';
 import { AuthService } from '../../core/services/auth.service';
 import { BankAccountApiService } from '../../core/services/bank-account-api.service';
@@ -28,6 +29,7 @@ interface DashboardOverviewCard {
   icon: string;
   gradient: string;
   currency?: boolean;
+  itemCount?: number;
 }
 
 @Component({
@@ -36,6 +38,7 @@ interface DashboardOverviewCard {
     RouterLink,
     TranslatePipe,
     DatePipe,
+    NgTemplateOutlet,
     DecimalPipe,
     AppCardComponent,
     EmptyStateComponent,
@@ -98,40 +101,46 @@ interface DashboardOverviewCard {
       [class.mt-4]="isDebtor()"
     >
       @for (card of overviewCards(); track card.titleKey) {
-        <div
-          [class]="'relative overflow-hidden rounded-3xl bg-gradient-to-br p-6 text-white shadow-lg ' + card.gradient"
-        >
-          <div class="absolute -left-6 -top-10 h-36 w-36 rounded-full bg-white/10 blur-2xl"></div>
-          <i
-            class="pi absolute -bottom-6 -right-5 text-[7.5rem] text-white/10"
-            [class]="'pi ' + card.icon"
-            aria-hidden="true"
-          ></i>
-          <div class="relative">
-            <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
-              <i class="pi text-lg" [class]="'pi ' + card.icon"></i>
-            </span>
-            <p class="mb-0 mt-3 text-sm font-bold uppercase tracking-wide text-white/75">
-              {{ card.titleKey | translate }}
-            </p>
-            @if (card.loading) {
-              <span class="mt-1 block h-10 w-20 animate-pulse rounded-md bg-white/25"></span>
-            } @else {
-              <strong class="block text-5xl font-extrabold">
-                @if (card.currency) {
-                  &#3647;{{ card.count | number: '1.2-2' }}
-                } @else {
-                  {{ card.count | number }}
-                }
-              </strong>
-              @if (card.count === 0) {
-                <small class="text-sm text-white/70">{{ card.emptyKey | translate }}</small>
-              }
-            }
-          </div>
-        </div>
+        <ng-container *ngTemplateOutlet="statCard; context: { $implicit: card, amountClass: 'text-5xl' }" />
       }
     </section>
+
+    <ng-template #statCard let-card let-amountClass="amountClass">
+      <div [class]="'relative overflow-hidden rounded-3xl bg-gradient-to-br p-6 text-white shadow-lg ' + card.gradient">
+        <div class="absolute -left-6 -top-10 h-36 w-36 rounded-full bg-white/10 blur-2xl"></div>
+        <i
+          class="pi absolute -bottom-6 -right-5 text-[7.5rem] text-white/10"
+          [class]="'pi ' + card.icon"
+          aria-hidden="true"
+        ></i>
+        <div class="relative">
+          <span class="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur-sm">
+            <i class="pi text-lg" [class]="'pi ' + card.icon"></i>
+          </span>
+          <p class="mb-0 mt-3 text-sm font-bold uppercase tracking-wide text-white/75">
+            {{ card.titleKey | translate }}
+          </p>
+          @if (card.loading) {
+            <span class="mt-1 block h-10 w-20 animate-pulse rounded-md bg-white/25"></span>
+          } @else {
+            <strong [class]="'block break-all font-extrabold ' + amountClass">
+              @if (card.currency) {
+                &#3647;{{ card.count | number: '1.2-2' }}
+              } @else {
+                {{ card.count | number }}
+              }
+            </strong>
+            @if (card.count === 0) {
+              <small class="text-sm text-white/70">{{ card.emptyKey | translate }}</small>
+            } @else if (card.itemCount !== undefined) {
+              <small class="text-sm font-semibold text-white/80">
+                {{ 'dashboard.itemCount' | translate: { count: card.itemCount } }}
+              </small>
+            }
+          }
+        </div>
+      </div>
+    </ng-template>
 
     @if (isAdmin()) {
       <section class="mt-4">
@@ -186,7 +195,14 @@ interface DashboardOverviewCard {
                 }
               } @else {
                 @for (row of pagedDebtorRows(); track row.id; let i = $index) {
-                  <div class="flex items-center justify-between gap-2 px-5 py-3">
+                  <button
+                    type="button"
+                    class="flex w-full items-center justify-between gap-2 px-5 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-500 dark:hover:bg-slate-700/50"
+                    [class.bg-blue-50]="selectedDebtor()?.id === row.id"
+                    [class.dark:bg-blue-500/10]="selectedDebtor()?.id === row.id"
+                    [attr.aria-pressed]="selectedDebtor()?.id === row.id"
+                    (click)="selectDebtor(row)"
+                  >
                     <div class="flex min-w-0 items-center gap-2.5">
                       <span
                         [class]="
@@ -213,7 +229,7 @@ interface DashboardOverviewCard {
                         >{{ 'dashboard.debtorPaidUp' | translate }}</span
                       >
                     }
-                  </div>
+                  </button>
                 }
               }
             </div>
@@ -247,6 +263,55 @@ interface DashboardOverviewCard {
           }
         </div>
 
+        <div
+          class="flex flex-col rounded-3xl border border-slate-300 bg-white p-5 shadow-sm dark:border-slate-600 dark:bg-slate-800 lg:col-span-2"
+          aria-live="polite"
+        >
+          @if (selectedDebtor(); as debtor) {
+            <header class="flex items-center justify-between gap-2 pb-4">
+              <div class="min-w-0">
+                <h2 class="m-0 truncate text-base font-semibold text-slate-800 dark:text-slate-100">
+                  {{ debtor.name }}
+                </h2>
+                <p class="m-0 truncate text-xs text-slate-400 dark:text-slate-500">{{ debtor.username }}</p>
+              </div>
+              <button
+                type="button"
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 dark:text-slate-500 dark:hover:bg-slate-700"
+                [attr.aria-label]="'dashboard.clearSelectedDebtor' | translate"
+                (click)="clearSelectedDebtor()"
+              >
+                <i class="pi pi-times text-xs"></i>
+              </button>
+            </header>
+            @if (selectedDueReportError()) {
+              <app-error-state
+                [title]="'errors.unexpected' | translate"
+                [retryLabel]="'common.retry' | translate"
+                (retry)="loadSelectedDueReport(debtor.username)"
+              />
+            } @else {
+              <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                @for (card of selectedDebtorCards(); track card.titleKey) {
+                  <ng-container
+                    *ngTemplateOutlet="statCard; context: { $implicit: card, amountClass: 'text-2xl xl:text-3xl' }"
+                  />
+                }
+              </div>
+            }
+          } @else {
+            <div class="flex flex-1 items-center justify-center">
+              <app-empty-state
+                icon="pi-user"
+                [title]="'dashboard.selectDebtorTitle' | translate"
+                [message]="'dashboard.selectDebtorDescription' | translate"
+              />
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <div
           class="flex h-full flex-col overflow-hidden rounded-3xl border border-t-4 border-slate-300 border-t-teal-300 bg-white shadow-sm dark:border-slate-600 dark:bg-slate-800"
         >
@@ -627,6 +692,7 @@ export class DashboardComponent implements OnInit {
   private readonly reportApi = inject(ReportApiService);
   private readonly alerts = inject(SweetAlertService);
   private readonly auth = inject(AuthService);
+  private readonly destroyRef = inject(DestroyRef);
   protected readonly router = inject(Router);
   private readonly pageSize = 5;
   private readonly avatarPalette = [
@@ -678,10 +744,15 @@ export class DashboardComponent implements OnInit {
 
   readonly dueReport = signal<DueReport | null>(null);
   readonly loadingDueReport = signal(true);
-  private readonly dueLines = computed(() => this.dueReport()?.lines ?? []);
-  readonly periodTotalAmount = computed(() => this.sumDue(this.dueLines()));
-  readonly paidAmount = computed(() => this.sumDue(this.dueLines().filter((line) => line.paid)));
-  readonly unpaidAmount = computed(() => this.periodTotalAmount() - this.paidAmount());
+
+  readonly selectedDebtor = signal<Debtor | null>(null);
+  readonly selectedDueReport = signal<DueReport | null>(null);
+  readonly loadingSelectedDueReport = signal(false);
+  readonly selectedDueReportError = signal(false);
+  private selectedDueReportRequest?: Subscription;
+  readonly selectedDebtorCards = computed(() =>
+    this.buildAmountCards(this.selectedDueReport(), this.loadingSelectedDueReport())
+  );
 
   readonly bankAccounts = signal<BankAccount[]>([]);
   readonly loadingBankAccounts = signal(true);
@@ -762,33 +833,7 @@ export class DashboardComponent implements OnInit {
     }
     if (this.isDebtor()) {
       return [
-        {
-          titleKey: 'dashboard.myPeriodTotalTitle',
-          emptyKey: 'dashboard.myPeriodTotalEmpty',
-          count: this.periodTotalAmount(),
-          loading: this.loadingDueReport(),
-          icon: 'pi-wallet',
-          gradient: 'from-blue-500 via-indigo-600 to-violet-700',
-          currency: true
-        },
-        {
-          titleKey: 'dashboard.myUnpaidAmountTitle',
-          emptyKey: 'dashboard.myUnpaidAmountEmpty',
-          count: this.unpaidAmount(),
-          loading: this.loadingDueReport(),
-          icon: 'pi-exclamation-circle',
-          gradient: 'from-rose-500 via-red-600 to-red-700',
-          currency: true
-        },
-        {
-          titleKey: 'dashboard.myPaidAmountTitle',
-          emptyKey: 'dashboard.myPaidAmountEmpty',
-          count: this.paidAmount(),
-          loading: this.loadingDueReport(),
-          icon: 'pi-check-circle',
-          gradient: 'from-emerald-500 via-emerald-600 to-teal-700',
-          currency: true
-        },
+        ...this.buildAmountCards(this.dueReport(), this.loadingDueReport()),
         {
           titleKey: 'dashboard.myCreditorCountTitle',
           emptyKey: 'dashboard.myCreditorCountEmpty',
@@ -930,6 +975,76 @@ export class DashboardComponent implements OnInit {
         },
         error: () => this.loginHistoryError.set(true)
       });
+  }
+
+  selectDebtor(debtor: Debtor): void {
+    if (this.selectedDebtor()?.id === debtor.id) return;
+    this.selectedDebtor.set(debtor);
+    this.loadSelectedDueReport(debtor.username);
+  }
+
+  clearSelectedDebtor(): void {
+    this.selectedDueReportRequest?.unsubscribe();
+    this.selectedDebtor.set(null);
+    this.selectedDueReport.set(null);
+    this.selectedDueReportError.set(false);
+    this.loadingSelectedDueReport.set(false);
+  }
+
+  loadSelectedDueReport(debtorUsername: string): void {
+    this.selectedDueReportRequest?.unsubscribe();
+    this.selectedDueReport.set(null);
+    this.selectedDueReportError.set(false);
+    this.loadingSelectedDueReport.set(true);
+    this.selectedDueReportRequest = this.reportApi
+      .getDueReport(debtorUsername)
+      .pipe(
+        takeUntilDestroyed(this.destroyRef),
+        finalize(() => this.loadingSelectedDueReport.set(false))
+      )
+      .subscribe({
+        next: (report) => this.selectedDueReport.set(report),
+        error: () => this.selectedDueReportError.set(true)
+      });
+  }
+
+  private buildAmountCards(report: DueReport | null, loading: boolean): DashboardOverviewCard[] {
+    const lines = report?.lines ?? [];
+    const paidLines = lines.filter((line) => line.paid);
+    const total = this.sumDue(lines);
+    const paid = this.sumDue(paidLines);
+    return [
+      {
+        titleKey: 'dashboard.myPeriodTotalTitle',
+        emptyKey: 'dashboard.myPeriodTotalEmpty',
+        count: total,
+        itemCount: lines.length,
+        loading,
+        icon: 'pi-wallet',
+        gradient: 'from-blue-500 via-indigo-600 to-violet-700',
+        currency: true
+      },
+      {
+        titleKey: 'dashboard.myUnpaidAmountTitle',
+        emptyKey: 'dashboard.myUnpaidAmountEmpty',
+        count: total - paid,
+        itemCount: lines.length - paidLines.length,
+        loading,
+        icon: 'pi-exclamation-circle',
+        gradient: 'from-rose-500 via-red-600 to-red-700',
+        currency: true
+      },
+      {
+        titleKey: 'dashboard.myPaidAmountTitle',
+        emptyKey: 'dashboard.myPaidAmountEmpty',
+        count: paid,
+        itemCount: paidLines.length,
+        loading,
+        icon: 'pi-check-circle',
+        gradient: 'from-emerald-500 via-emerald-600 to-teal-700',
+        currency: true
+      }
+    ];
   }
 
   private sumDue(lines: DueReportLine[]): number {
