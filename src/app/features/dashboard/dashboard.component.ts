@@ -12,7 +12,7 @@ import { ReportApiService } from '../../core/services/report-api.service';
 import { UserApiService } from '../../core/services/user-api.service';
 import { DebtSummary } from '../../core/models/debt.model';
 import { LoginLog } from '../../core/models/login-log.model';
-import { BankAccount, DocumentItem, DueReport } from '../../core/models/phase-three.model';
+import { BankAccount, DocumentItem, DueReport, DueReportLine } from '../../core/models/phase-three.model';
 import { CreditorSummary, Debtor } from '../../core/models/user.model';
 import { AppCardComponent, CardAccent } from '../../shared/components/app-card/app-card.component';
 import { EmptyStateComponent } from '../../shared/components/empty-state/empty-state.component';
@@ -92,7 +92,11 @@ interface DashboardOverviewCard {
       </section>
     }
 
-    <section class="grid grid-cols-1 gap-4 sm:grid-cols-2" [class.mt-4]="isDebtor()">
+    <section
+      class="grid grid-cols-1 gap-4 sm:grid-cols-2"
+      [class.lg:grid-cols-4]="isDebtor()"
+      [class.mt-4]="isDebtor()"
+    >
       @for (card of overviewCards(); track card.titleKey) {
         <div
           [class]="'relative overflow-hidden rounded-3xl bg-gradient-to-br p-6 text-white shadow-lg ' + card.gradient"
@@ -674,6 +678,10 @@ export class DashboardComponent implements OnInit {
 
   readonly dueReport = signal<DueReport | null>(null);
   readonly loadingDueReport = signal(true);
+  private readonly dueLines = computed(() => this.dueReport()?.lines ?? []);
+  readonly periodTotalAmount = computed(() => this.sumDue(this.dueLines()));
+  readonly paidAmount = computed(() => this.sumDue(this.dueLines().filter((line) => line.paid)));
+  readonly unpaidAmount = computed(() => this.periodTotalAmount() - this.paidAmount());
 
   readonly bankAccounts = signal<BankAccount[]>([]);
   readonly loadingBankAccounts = signal(true);
@@ -755,12 +763,30 @@ export class DashboardComponent implements OnInit {
     if (this.isDebtor()) {
       return [
         {
-          titleKey: 'dashboard.myDueAmountTitle',
-          emptyKey: 'dashboard.myDueAmountEmpty',
-          count: this.dueReport()?.total ?? 0,
+          titleKey: 'dashboard.myPeriodTotalTitle',
+          emptyKey: 'dashboard.myPeriodTotalEmpty',
+          count: this.periodTotalAmount(),
           loading: this.loadingDueReport(),
           icon: 'pi-wallet',
-          gradient: 'from-amber-500 via-orange-600 to-red-600',
+          gradient: 'from-blue-500 via-indigo-600 to-violet-700',
+          currency: true
+        },
+        {
+          titleKey: 'dashboard.myUnpaidAmountTitle',
+          emptyKey: 'dashboard.myUnpaidAmountEmpty',
+          count: this.unpaidAmount(),
+          loading: this.loadingDueReport(),
+          icon: 'pi-exclamation-circle',
+          gradient: 'from-rose-500 via-red-600 to-red-700',
+          currency: true
+        },
+        {
+          titleKey: 'dashboard.myPaidAmountTitle',
+          emptyKey: 'dashboard.myPaidAmountEmpty',
+          count: this.paidAmount(),
+          loading: this.loadingDueReport(),
+          icon: 'pi-check-circle',
+          gradient: 'from-emerald-500 via-emerald-600 to-teal-700',
           currency: true
         },
         {
@@ -769,7 +795,7 @@ export class DashboardComponent implements OnInit {
           count: this.creditorCount(),
           loading: this.loadingDebts(),
           icon: 'pi-building',
-          gradient: 'from-blue-500 via-indigo-600 to-violet-700'
+          gradient: 'from-slate-500 via-slate-600 to-slate-700'
         }
       ];
     }
@@ -904,6 +930,10 @@ export class DashboardComponent implements OnInit {
         },
         error: () => this.loginHistoryError.set(true)
       });
+  }
+
+  private sumDue(lines: DueReportLine[]): number {
+    return lines.reduce((sum, line) => sum + line.due, 0);
   }
 
   initials(name: string): string {
