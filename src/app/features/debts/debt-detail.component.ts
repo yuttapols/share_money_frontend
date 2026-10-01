@@ -194,7 +194,7 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
                     <tr>
                       <td>{{ row.no }}</td>
                       <td>{{ row.status === 'PAID' && row.payDate ? (row.payDate | date: 'd MMM y') : '-' }}</td>
-                      <td class="right">฿{{ current.installmentAmount ?? row.interest | number: '1.2-2' }}</td>
+                      <td class="right">฿{{ row.interest || row.totalPaid | number: '1.2-2' }}</td>
                       <td class="right">฿{{ row.remainingPrincipal | number: '1.2-2' }}</td>
                       <td>
                         <span [class]="row.status === 'PAID' ? 'paid-chip' : 'unpaid-chip'">{{
@@ -242,7 +242,7 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
       (visibleChange)="paymentDialog.set($event)"
       ><form class="dialog-form" [formGroup]="paymentForm" (ngSubmit)="confirmPayment()">
         <label>{{ 'debts.payDate' | translate }} <b>*</b></label
-        ><input type="date" formControlName="payDate" [max]="today" />
+        ><input type="date" formControlName="payDate" />
         <div class="dialog-actions">
           <app-button variant="secondary" (pressed)="paymentDialog.set(false)">{{
             'common.cancel' | translate
@@ -261,8 +261,7 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
       ><form class="dialog-form" [formGroup]="recordForm" (ngSubmit)="saveOpenRecord()">
         @if (!editingRecord()) {
           <label>{{ 'debts.payDate' | translate }} <b>*</b></label
-          ><input type="date" formControlName="payDate" [max]="today" /><label
-            >{{ 'debts.interest' | translate }} <b>*</b></label
+          ><input type="date" formControlName="payDate" /><label>{{ 'debts.interest' | translate }} <b>*</b></label
           ><input type="number" formControlName="interest" min="0" max="9999999.99" step="0.01" /><label
             >{{ 'debts.remainingPrincipal' | translate }} <b>*</b></label
           ><input type="number" formControlName="remainingPrincipal" min="0" max="9999999.99" step="0.01" />
