@@ -60,6 +60,12 @@ export class DebtApiService {
       .pipe(map((response) => response.data));
   }
 
+  cancelInterest(id: number, no: number): Observable<DebtDetail> {
+    return this.http
+      .post<ApiResponse<DebtDetail>>(`${environment.apiUrl}/debts/${id}/installments/${no}/cancel-interest`, {})
+      .pipe(map((response) => response.data));
+  }
+
   setFullPaid(id: number, request: PayInstallmentRequest): Observable<DebtDetail> {
     return this.http
       .post<ApiResponse<DebtDetail>>(`${environment.apiUrl}/debts/${id}/full-paid`, request)

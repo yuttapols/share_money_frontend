@@ -4,7 +4,7 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { TranslatePipe } from '@ngx-translate/core';
 import { finalize } from 'rxjs';
-import { DebtDetail, Installment, OpenLoanRecord } from '../../core/models/debt.model';
+import { DebtDetail, Installment, InstallmentStatus, OpenLoanRecord } from '../../core/models/debt.model';
 import { AuthService } from '../../core/services/auth.service';
 import { DebtApiService } from '../../core/services/debt-api.service';
 import { AppButtonComponent } from '../../shared/components/app-button/app-button.component';
@@ -12,6 +12,8 @@ import { AppDialogComponent } from '../../shared/components/app-dialog/app-dialo
 import { ErrorStateComponent } from '../../shared/components/error-state/error-state.component';
 import { SweetAlertService } from '../../shared/services/sweet-alert.service';
 import { currencyAmountValidators } from '../../shared/utils/validators.util';
+
+const INTEREST_PERIOD_START_DAY = 6;
 
 @Component({
   selector: 'app-debt-detail',
@@ -80,6 +82,12 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
               ><strong>{{ current.startDate | date: 'd MMM y' }}</strong>
             </article>
           }
+          @if (current.method === 'INSTALLMENT') {
+            <article class="interest-card">
+              <span>{{ 'debts.interestPaidTotal' | translate }}</span
+              ><strong>฿{{ current.interestPaidTotal ?? 0 | number: '1.2-2' }}</strong>
+            </article>
+          }
           @if (current.method === 'OPEN' && currentDueRecord(); as due) {
             <article [class.paid]="due.status === 'PAID'">
               <span>{{ 'debts.dueAmount' | translate }}</span
@@ -103,7 +111,6 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
                     <th>#</th>
                     <th>{{ 'debts.payDate' | translate }}</th>
                     <th class="right">{{ 'debts.amount' | translate }}</th>
-                    <th>{{ 'debts.kind' | translate }}</th>
                     <th>{{ 'debts.status' | translate }}</th>
                     <th class="right">{{ 'debts.actions' | translate }}</th>
                   </tr>
@@ -112,12 +119,22 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
                   @for (row of current.installments ?? []; track row.no) {
                     <tr>
                       <td>{{ row.no }}</td>
-                      <td>{{ row.status === 'PAID' && row.payDate ? (row.payDate | date: 'd MMM y') : '-' }}</td>
-                      <td class="right">฿{{ row.amount | number: '1.2-2' }}</td>
-                      <td>{{ 'installmentKind.' + row.kind | translate }}</td>
                       <td>
-                        <span [class]="row.status === 'PAID' ? 'paid-chip' : 'unpaid-chip'">{{
-                          'paymentStatus.' + row.status | translate
+                        @if (row.status === 'PAID' && row.payDate) {
+                          {{ row.payDate | date: 'd MMM y' }}
+                        } @else if (row.status === 'INTEREST_PAID' && row.lastInterestPayDate) {
+                          {{ 'debts.interestPaidOn' | translate: { date: row.lastInterestPayDate | date: 'd MMM y' } }}
+                          @if (row.interestPaidCount > 1) {
+                            (x{{ row.interestPaidCount }})
+                          }
+                        } @else {
+                          -
+                        }
+                      </td>
+                      <td class="right">฿{{ row.amount | number: '1.2-2' }}</td>
+                      <td>
+                        <span [class]="statusChipClass[row.status]">{{
+                          'installmentStatus.' + row.status | translate
                         }}</span>
                       </td>
                       <td class="right actions-cell">
@@ -139,11 +156,11 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
                             ></span
                             >{{ (row.status === 'PAID' ? 'debts.cancelPayment' : 'debts.pay') | translate }}
                           </button>
-                          @if (row.status === 'UNPAID') {
+                          @if (row.no === nextDueInstallmentNo() || row.status === 'INTEREST_PAID') {
                             <button
                               type="button"
                               class="interest"
-                              [disabled]="actionKey() !== ''"
+                              [disabled]="actionKey() !== '' || isInterestPaidThisPeriod(row)"
                               (click)="payInterest(row)"
                             >
                               <span
@@ -152,6 +169,21 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
                                 "
                               ></span
                               >{{ 'debts.payInterest' | translate }}
+                            </button>
+                          }
+                          @if (row.status === 'INTEREST_PAID') {
+                            <button
+                              type="button"
+                              class="delete"
+                              [disabled]="actionKey() !== ''"
+                              (click)="cancelInterest(row)"
+                            >
+                              <span
+                                [class]="
+                                  actionKey() === 'cancel-interest-' + row.no ? 'pi pi-spin pi-spinner' : 'pi pi-undo'
+                                "
+                              ></span
+                              >{{ 'debts.cancelInterest' | translate }}
                             </button>
                           }
                         }
@@ -243,6 +275,18 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
       ><form class="dialog-form" [formGroup]="paymentForm" (ngSubmit)="confirmPayment()">
         <label>{{ 'debts.payDate' | translate }} <b>*</b></label
         ><input type="date" formControlName="payDate" />
+        @if (isInterestDialog()) {
+          <label for="interest-amount">{{ 'debts.interestAmount' | translate }} <b>*</b></label
+          ><input
+            id="interest-amount"
+            type="number"
+            formControlName="amount"
+            min="0.01"
+            max="9999999.99"
+            step="0.01"
+            [attr.aria-invalid]="paymentForm.controls.amount.invalid"
+          />
+        }
         <div class="dialog-actions">
           <app-button variant="secondary" (pressed)="paymentDialog.set(false)">{{
             'common.cancel' | translate
@@ -352,6 +396,17 @@ import { currencyAmountValidators } from '../../shared/utils/validators.util';
     .paid-chip {
       background: #ecfdf5;
       color: #059669;
+    }
+    .interest-chip {
+      border-radius: 999px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.68rem;
+      font-weight: 750;
+      background: #faf5ff;
+      color: #7c3aed;
+    }
+    .summary-grid article.interest-card {
+      border-top-color: #c4b5fd;
     }
     .summary-grid {
       display: grid;
@@ -529,9 +584,14 @@ export class DebtDetailComponent implements OnInit {
   private readonly alerts = inject(SweetAlertService);
   private readonly id = Number(this.route.snapshot.paramMap.get('id'));
   readonly backQueryParams = { debtor: this.route.snapshot.queryParamMap.get('debtor') || null };
-  private paymentAction: 'pay' | 'interest' | 'full' = 'pay';
   private selectedInstallment: Installment | null = null;
   readonly today = new Date().toISOString().slice(0, 10);
+  readonly statusChipClass: Record<InstallmentStatus, string> = {
+    UNPAID: 'unpaid-chip',
+    INTEREST_PAID: 'interest-chip',
+    PAID: 'paid-chip'
+  };
+  readonly isInterestDialog = signal(false);
   readonly debt = signal<DebtDetail | null>(null);
   readonly loading = signal(true);
   readonly loadError = signal(false);
@@ -583,6 +643,10 @@ export class DebtDetailComponent implements OnInit {
     }
     return current.startDate;
   });
+  readonly nextDueInstallmentNo = computed(
+    () => this.debt()?.installments?.find((row) => row.status !== 'PAID')?.no ?? null
+  );
+  private readonly currentInterestPeriodStart = this.resolveInterestPeriodStart(new Date());
   readonly currentDueRecord = computed(() => {
     const current = this.debt();
     if (!current || current.method !== 'OPEN') return null;
@@ -599,12 +663,24 @@ export class DebtDetailComponent implements OnInit {
       }) ?? null
     );
   });
+  isInterestPaidThisPeriod(row: Installment): boolean {
+    return !!row.lastInterestPayDate && row.lastInterestPayDate >= this.currentInterestPeriodStart;
+  }
+  private resolveInterestPeriodStart(now: Date): string {
+    const monthOffset = now.getDate() >= INTEREST_PERIOD_START_DAY ? 0 : -1;
+    const start = new Date(now.getFullYear(), now.getMonth() + monthOffset, INTEREST_PERIOD_START_DAY);
+    const month = String(start.getMonth() + 1).padStart(2, '0');
+    return `${start.getFullYear()}-${month}-0${INTEREST_PERIOD_START_DAY}`;
+  }
   private addMonth(dateStr: string): Date {
     const next = new Date(dateStr);
     next.setMonth(next.getMonth() + 1);
     return next;
   }
-  readonly paymentForm = this.fb.nonNullable.group({ payDate: [this.today, Validators.required] });
+  readonly paymentForm = this.fb.nonNullable.group({
+    payDate: [this.today, Validators.required],
+    amount: [{ value: 0, disabled: true }, currencyAmountValidators()]
+  });
   readonly recordForm = this.fb.nonNullable.group({
     payDate: [this.today, Validators.required],
     interest: [0, currencyAmountValidators(0)],
@@ -628,25 +704,39 @@ export class DebtDetailComponent implements OnInit {
       this.runInstallmentPayment(row, false);
       return;
     }
-    this.selectedInstallment = row;
-    this.paymentAction = 'pay';
-    this.paymentForm.reset({ payDate: this.today });
-    this.paymentDialog.set(true);
+    this.openPaymentDialog(row, false);
   }
   payInterest(row: Installment): void {
+    this.openPaymentDialog(row, true);
+  }
+  private openPaymentDialog(row: Installment, interest: boolean): void {
     this.selectedInstallment = row;
-    this.paymentAction = 'interest';
-    this.paymentForm.reset({ payDate: this.today });
+    this.isInterestDialog.set(interest);
+    this.paymentForm.reset({ payDate: this.today, amount: row.amount });
+    if (interest) this.paymentForm.controls.amount.enable();
+    else this.paymentForm.controls.amount.disable();
     this.paymentDialog.set(true);
+  }
+  cancelInterest(row: Installment): void {
+    if (this.actionKey()) return;
+    this.actionKey.set(`cancel-interest-${row.no}`);
+    this.api
+      .cancelInterest(this.id, row.no)
+      .pipe(finalize(() => this.actionKey.set('')))
+      .subscribe((debt) => {
+        this.debt.set(debt);
+        this.alerts.success('toast.paymentUpdated');
+      });
   }
   confirmPayment(): void {
     const row = this.selectedInstallment;
     if (!row || this.paymentForm.invalid || this.actionKey()) return;
     this.paymentDialog.set(false);
-    if (this.paymentAction === 'interest') {
+    if (this.isInterestDialog()) {
+      const { payDate, amount } = this.paymentForm.getRawValue();
       this.actionKey.set(`interest-${row.no}`);
       this.api
-        .payInterest(this.id, row.no, { payDate: this.paymentForm.getRawValue().payDate })
+        .payInterest(this.id, row.no, { payDate, amount })
         .pipe(finalize(() => this.actionKey.set('')))
         .subscribe((debt) => {
           this.debt.set(debt);

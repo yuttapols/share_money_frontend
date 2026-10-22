@@ -1,7 +1,7 @@
 export type DebtMethod = 'INSTALLMENT' | 'OPEN' | 'FULL';
 export type DebtStatus = 'PENDING' | 'PARTIAL' | 'PAID';
 export type PaymentStatus = 'UNPAID' | 'PAID';
-export type InstallmentKind = 'PRINCIPAL' | 'INTEREST';
+export type InstallmentStatus = 'UNPAID' | 'INTEREST_PAID' | 'PAID';
 
 export interface DebtSummary {
   id: number;
@@ -26,11 +26,13 @@ export interface DebtSummary {
 export interface Installment {
   no: number;
   amount: number;
-  kind: InstallmentKind;
-  status: PaymentStatus;
+  status: InstallmentStatus;
   dueDate: string;
   payDate: string | null;
   paidAt: string | null;
+  interestPaidCount: number;
+  interestPaidTotal: number;
+  lastInterestPayDate: string | null;
 }
 
 export interface OpenLoanRecord {
@@ -46,6 +48,7 @@ export interface OpenLoanRecord {
 export interface DebtDetail extends DebtSummary {
   startDate: string;
   installmentAmount?: number;
+  interestPaidTotal?: number | null;
   installments?: Installment[];
   openRecords?: OpenLoanRecord[];
 }
@@ -78,6 +81,7 @@ export interface PayInstallmentRequest {
 
 export interface PayInterestRequest {
   payDate: string;
+  amount?: number;
 }
 
 export interface CreateOpenRecordRequest {
